@@ -117,7 +117,7 @@ async function changePlot(panel) {
         getInstruments(currentPlotTree[0], panel)
     } else {
         try {
-            const response = await fetch('process.env.apiSeverURL/sites');
+            const response = await fetch('$apiSeverURL/sites');
             const data = await response.json();
             populateGrid(data,"sites",panel);
         }
@@ -168,13 +168,13 @@ function populateGrid(data,state,panel) {
             valueEl.textContent = value.description 
         } else if (state==="plots"){
             const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-            img.src = 'process.env.apiSeverURL/visualizations/byID/'+value+'/'+ymd;
+            img.src = '$apiSeverURL/visualizations/byID/'+value+'/'+ymd;
             img.onerror = function() {
                 tile.style.display = "none";
             };
             img.addEventListener('recalcThumbnails', () => {
                 const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-                img.src = 'process.env.apiSeverURL/visualizations/byID/'+value+'/'+ymd;
+                img.src = '$apiSeverURL/visualizations/byID/'+value+'/'+ymd;
                 tile.style.display = "block";
                 img.onerror = function() {
                     tile.style.display = "none";
@@ -197,7 +197,7 @@ function populateGrid(data,state,panel) {
 
 async function getInstruments(siteId,panel) {
     try {
-        const response = await fetch('process.env.apiSeverURL/sites/'+siteId+'/instruments');
+        const response = await fetch('$apiSeverURL/sites/'+siteId+'/instruments');
         const data = await response.json();
         populateGrid(data,"instruments",panel);
     } catch (error) {
@@ -206,7 +206,7 @@ async function getInstruments(siteId,panel) {
 };
 async function getPlots(instrumentId,panel){
     try {
-        const response = await fetch('process.env.apiSeverURL/visualizations/byInstrument/'+instrumentId);
+        const response = await fetch('$apiSeverURL/visualizations/byInstrument/'+instrumentId);
         const data = await response.json();
         populateGrid(data,"plots",panel);
     } catch (error) {
@@ -218,14 +218,14 @@ async function populateTile(plotId,panel){
     try {
         const imageContainer = document.getElementById(panel);
         const image = imageContainer.querySelector('img');
-        image.src = 'process.env.apiSeverURL/visualizations/byID/'+plotId+'/'+ymd;
+        image.src = '$apiSeverURL/visualizations/byID/'+plotId+'/'+ymd;
         params.set(panel, openPlots[parseInt(panel[1]) -1].join(','));
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.pushState({}, '', newUrl);
         const header = document.getElementById(`header${parseInt(panel[1])}`);
         header.innerHTML = openPlots[parseInt(panel[1]) -1].join('\t');
-        console.log('process.env.apiSeverURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
-        const response = await fetch('process.env.apiSeverURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
+        console.log('$apiSeverURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
+        const response = await fetch('$apiSeverURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
         const data = await response.json();
         const info = document.getElementById(`info${parseInt(panel[1])}`);
         info.href = data.wiki

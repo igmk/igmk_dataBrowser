@@ -27,8 +27,8 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ghcr.io/igmk/igmk_dataBrowser
+        labels: latest
     - name: Generate artifact attestation
       uses: actions/attest@v4
       with:

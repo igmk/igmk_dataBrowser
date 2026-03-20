@@ -1,8 +1,7 @@
 # 📊 igmk Data Browser
 
-Das Frontend des  **IGMK Data Browser **.
+Das Frontend des  **IGMK Data Browser**.
 
----
 
 ## 🚀 Features
 
@@ -10,19 +9,19 @@ Das Frontend des  **IGMK Data Browser **.
 - 🐳 Einfache Nutzung via Docker
 
 
----
 
 ## 🧰 Voraussetzungen
 
 - [Docker](https://www.docker.com/) installiert
 
----
 ## 🏗️ Docker Image bauen
 
 Du kannst das Docker-Image lokal selbst bauen mit:
 
 ```bash
 docker build -t databrowser .
+```
+
 
 ## ▶️ Schnellstart (Docker)
 

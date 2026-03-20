@@ -28,7 +28,7 @@ docker build -t databrowser .
 Starte den Data Browser mit folgendem Befehl:
 
 ```bash
-docker run -p 80:80 databrowser
+docker run -p 80:80 ghcr.io/igmk/databrowser:latest
 ```
 
 Oder mit Docker Compose:
@@ -38,7 +38,7 @@ version: "3.8"
 
 services:
   databrowser:
-    image: databrowser
+    image: ghcr.io/igmk/databrowser:latest
     container_name: databrowser
     ports:
       - "80:80"

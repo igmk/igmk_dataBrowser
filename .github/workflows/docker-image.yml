@@ -22,5 +22,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: ghcr.io/igmk/igmk_dataBrowser
+        tags: ghcr.io/igmk/databrowser
         labels: latest

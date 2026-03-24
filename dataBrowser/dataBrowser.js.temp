@@ -197,7 +197,7 @@ function populateGrid(data,state,panel) {
 
 async function getInstruments(siteId,panel) {
     try {
-        const response = await fetch('$APIURL/sites/'+siteId+'/instruments');
+        const response = await fetch('$APIURL/sites/'+siteId+'/instruments/');
         const data = await response.json();
         populateGrid(data,"instruments",panel);
     } catch (error) {

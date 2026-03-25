@@ -224,11 +224,11 @@ async function populateTile(plotId,panel){
         window.history.pushState({}, '', newUrl);
         const header = document.getElementById(`header${parseInt(panel[1])}`);
         header.innerHTML = openPlots[parseInt(panel[1]) -1].join('\t');
-        //console.log('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
-        //const response = await fetch('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
-        //const data = await response.json();
-        //const info = document.getElementById(`info${parseInt(panel[1])}`);
-        //info.href = data.wiki
+        // console.log('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
+        // const response = await fetch('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
+        // const data = await response.json();
+        // const info = document.getElementById(`info${parseInt(panel[1])}`);
+        // info.href = data.wiki
 
     } catch (error) {
         alert('Error: ' + error.message); // display an error message in an alert

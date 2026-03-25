@@ -1,38 +1,16 @@
-# 📊 igmk Data Browser
+# igmk Data Browser
 
 Das Frontend des  **IGMK Data Browser**.
 
+## Usage
 
-## 🚀 Features
+### Run local (only for dev)
+1. Clone Repository
+2. rename `dataBrowser/dataBrowser.js.temp` to `dataBrowser/dataBrowser.js` (undo before committing to github)
+3. replace all `$APIURL` by api-server URL in `dataBrowser/dataBrowser.js` (undo before committing to github)
+4. open `dataBrowser/index.html` in web browser
 
-- 📊 Interaktive Visualisierung
-- 🐳 Einfache Nutzung via Docker
-
-
-
-## 🧰 Voraussetzungen
-
-- [Docker](https://www.docker.com/) installiert
-
-## 🏗️ Docker Image bauen
-
-Du kannst das Docker-Image lokal selbst bauen mit:
-
-```bash
-docker build -t databrowser .
-```
-
-
-## ▶️ Schnellstart (Docker)
-
-Starte den Data Browser mit folgendem Befehl:
-
-```bash
-docker run -p 80:80 ghcr.io/igmk/databrowser:latest
-```
-
-Oder mit Docker Compose:
-
+### Docker
 ```YAML
 version: "3.8"
 
@@ -41,6 +19,8 @@ services:
     image: ghcr.io/igmk/databrowser:latest
     container_name: databrowser
     ports:
-      - "80:80"
+      - "8080:80"
+    environment:
+      - APIURL=https://api.herz-campaigns.de
     restart: unless-stopped
 ```

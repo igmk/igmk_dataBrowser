@@ -49,12 +49,12 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 document.addEventListener('keydown', function(event) {
-  // Check which key was pressed
-  if (event.key === 'a' || event.key === 'ArrowLeft') {
-    // Execute your function here
-    updateDate(-1);
-  } else if (event.key === 's'|| event.key === 'ArrowRight'){
-    updateDate(1);
+  if (document.activeElement.id !== 'searchBar'){
+    if (event.key === 'a' || event.key === 'ArrowLeft') {
+        updateDate(-1);
+    } else if (event.key === 's'|| event.key === 'ArrowRight'){
+        updateDate(1);
+    }
   }
 });
 
@@ -110,6 +110,7 @@ async function changePlot(panel) {
     selectedPanel = parseInt(panel[1]) - 1;
     var currentPlotTree = openPlots[parseInt(panel[1]) -1]
     document.getElementById("selectionMenu").style.display = "grid";
+    document.getElementById("searchBar").style.display = "block";
     document.getElementById("plotsWrapper").style.display = "none";
     if (currentPlotTree[1] !=''){
         getPlots(currentPlotTree[1], panel)
@@ -301,9 +302,9 @@ function updatePanelPositions(openPanels) {
 
 function updateDate(shift){
     datePicker = document.getElementById("datePicker")
-    const currentDate = new Date(datePicker.value); // get the current date
-    const nextDay = new Date(currentDate); // create a new date object with the same value as currentDate
-    nextDay.setDate(currentDate.getDate() + shift); // add one day to the new date object
+    const currentDate = new Date(datePicker.value); 
+    const nextDay = new Date(currentDate);
+    nextDay.setDate(currentDate.getDate() + shift); 
     datePicker.valueAsDate = nextDay;
     updateTiles();
     const images = document.querySelectorAll('img');
@@ -325,6 +326,7 @@ function updateTiles(){
         populateTile(plotId,panel);
     };
 };
+
 var mapActive = true;
 function mapButton() {
     if (mapActive) {
@@ -358,4 +360,121 @@ function treeNavBack() {
 function treeNavClose() {
     document.getElementById("selectionMenu").style.display = "none";
     document.getElementById("plotsWrapper").style.display = "grid";
+};
+
+async function searchItems() {
+    document.getElementById("selectionMenu").style.display = "grid";
+    document.getElementById("plotsWrapper").style.display = "none";
+    let query = document.getElementById("searchBar").value.toLowerCase();
+    const grid = document.getElementById('selectionMenu');
+    grid.innerHTML = '';
+    let results = await fetch(`$APIURL/search/${query}`);
+    console.log(results);
+    let data = await results.json();
+    
+
+    let inst = Object.entries(data.inst); 
+    inst.forEach(([key, value]) => {
+        console.log(key+"/"+value);
+        // ---- create tile element ----
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+
+        // ---- tile content ----
+        const valueEl = document.createElement('div');
+        valueEl.className = 'tile-value';
+        valueEl.textContent = value;          // the visible text
+
+        const keyEl = document.createElement('div');
+        keyEl.className = 'tile-key';
+        keyEl.textContent = key;              // optional – shows the key too
+        
+        const img = document.createElement('img');
+        img.className = 'tile-img';
+        img.src = 'img/thumbnails/'+key+'.jpg';
+        
+        tile.appendChild(valueEl);
+        tile.appendChild(keyEl);
+        tile.appendChild(img)
+        tile.addEventListener('click', () => {
+                openPlots[parseInt(panel[1])-1][1] = key;
+                openPlots[parseInt(panel[1])-1][2] = '';
+                getPlots(key,panel);
+            });
+        grid.appendChild(tile);
+    });
+    let sites = Object.entries(data.sites); 
+    sites.forEach(([key, value]) => {
+        console.log(key+"/"+value);
+        // ---- create tile element ----
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+
+        // ---- tile content ----
+        const valueEl = document.createElement('div');
+        valueEl.className = 'tile-value';
+        valueEl.textContent = value;          // the visible text
+
+        const keyEl = document.createElement('div');
+        keyEl.className = 'tile-key';
+        keyEl.textContent = key;              // optional – shows the key too
+        
+        const img = document.createElement('img');
+        img.className = 'tile-img';
+        img.src = 'img/thumbnails/'+key+'.jpg';
+        
+        tile.appendChild(valueEl);
+        tile.appendChild(keyEl);
+        tile.appendChild(img)
+        tile.addEventListener('click', () => {
+            openPlots[parseInt(panel[1]) -1] = [key, '', ''];
+            getInstruments(key,panel);
+        });
+        grid.appendChild(tile);
+    });
+    let plots = Object.entries(data.plots); 
+    plots.forEach(([key, value]) => {
+        console.log(key+"/"+value);
+        // ---- create tile element ----
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+
+        // ---- tile content ----
+        const valueEl = document.createElement('div');
+        valueEl.className = 'tile-value';
+        valueEl.textContent = key;          // the visible text
+
+        const keyEl = document.createElement('div');
+        keyEl.className = 'tile-key';
+        keyEl.textContent = value;              // optional – shows the key too
+        
+        const img = document.createElement('img');
+        img.className = 'tile-img';
+        img.src = 'img/thumbnails/'+key+'.jpg';
+        
+        tile.appendChild(valueEl);
+        tile.appendChild(keyEl);
+        tile.appendChild(img)
+        const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
+        img.src = `${apiEndpoint}/visualizations/byID/${key}/${ymd}`;
+        console.log(img.src)
+        img.onerror = function() {
+            tile.style.display = "none";
+        };
+        img.addEventListener('recalcThumbnails', () => {
+            const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
+            img.src = `${apiEndpoint}/visualizations/byID/${key}/${ymd}`;
+            tile.style.display = "block";
+            img.onerror = function() {
+                tile.style.display = "none";
+            };
+        });
+        tile.addEventListener('click', () => {
+            openPlots[parseInt(panel[1])-1][2] = value;
+            populateTile(value,panel);
+            document.getElementById("selectionMenu").style.display = "none";
+            document.getElementById("plotsWrapper").style.display = "grid";   
+        });
+        grid.appendChild(tile);
+    });
 };

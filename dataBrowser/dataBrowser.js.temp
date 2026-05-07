@@ -165,6 +165,8 @@ function populateGrid(data,state,panel) {
         if (state==="sites") {
             tile.addEventListener('click', () => {
                 openPlots[parseInt(panel[1]) -1] = [key, '', ''];
+                menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
+                updateMenuUrl();
                 getInstruments(key,panel);
             });
         } else if (state==="instruments"){
@@ -190,6 +192,9 @@ function populateGrid(data,state,panel) {
             });
             tile.addEventListener('click', () => {
                 openPlots[parseInt(panel[1])-1][2] = value;
+                params.delete('ms');
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                window.history.pushState({}, '', newUrl);
                 populateTile(value,panel);
                 document.getElementById("selectionMenu").style.display = "none";
                 document.getElementById("plotsWrapper").style.display = "grid";   

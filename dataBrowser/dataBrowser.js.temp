@@ -11,7 +11,7 @@ let p2_info = params.get('p2');
 let p3_info = params.get('p3');
 let p4_info = params.get('p4');
 // let state = params.get('state');
-let menu_state = params.get('ms').split(',');
+let menu_state = params.get('ms') ? params.get('ms').split(',') : [];
 
 
 let currentOpenPanels =

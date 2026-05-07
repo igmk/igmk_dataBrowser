@@ -1,4 +1,3 @@
-var currentOpenPanels = [];
 var maxPanels = 4;
 const recalcThumbnailsEvent = new CustomEvent('recalcThumbnails',{ detail: { yourData: 'Here is some data' } });
 var openPlots = Array(maxPanels).fill().map(() => Array(3).fill(''));
@@ -14,7 +13,7 @@ let p4_info = params.get('p4');
 let state = params.get('state');
 let menu_state = params.get('ms');
 
-const currentOpenPanels =
+let currentOpenPanels =
     [p1_info, p2_info, p3_info, p4_info]
         .flatMap((info, i) => info != null ? [`p${i + 1}`] : [])
 

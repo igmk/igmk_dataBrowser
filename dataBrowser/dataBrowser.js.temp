@@ -1,4 +1,4 @@
-var currentOpenPanels = ["p1","p2","p3","p4"];
+var currentOpenPanels = [];
 var maxPanels = 4;
 const recalcThumbnailsEvent = new CustomEvent('recalcThumbnails',{ detail: { yourData: 'Here is some data' } });
 var openPlots = Array(maxPanels).fill().map(() => Array(3).fill(''));
@@ -11,6 +11,16 @@ let p1_info = params.get('p1');
 let p2_info = params.get('p2');
 let p3_info = params.get('p3');
 let p4_info = params.get('p4');
+let state = params.get('state');
+let menu_state = params.get('ms');
+
+const currentOpenPanels =
+    [p1_info, p2_info, p3_info, p4_info]
+        .flatMap((info, i) => info != null ? [`p${i + 1}`] : [])
+
+if (!currentOpenPanels.length) {
+    currentOpenPanels.push('p1')
+}
 
 document.addEventListener("DOMContentLoaded", function() {
     panels = document.querySelectorAll('.panel');
@@ -30,22 +40,13 @@ document.addEventListener("DOMContentLoaded", function() {
             image.dispatchEvent(recalcThumbnailsEvent);
         });
     });
-    if (p1_info !== null) {
-        populateTile(p1_info.split(',')[2] , 'p1')
-        openPlots[0] = p1_info.split(',')
-    }
-    if (p2_info !== null) {
-        populateTile(p2_info.split(',')[2] , 'p2')
-        openPlots[1] = p2_info.split(',')
-    }
-    if (p3_info !== null) {
-        populateTile(p3_info.split(',')[2] , 'p3')
-        openPlots[2] = p3_info.split(',')
-    }
-    if (p4_info !== null) {
-        populateTile(p4_info.split(',')[2] , 'p4')
-        openPlots[3] = p4_info.split(',')
-    }
+    [p1_info, p2_info, p3_info, p4_info].forEach((info, i) => {
+        if (!info) return
+
+        const parts = info.split(',')
+        populateTile(parts[2], `p${i + 1}`, changeUrlParams=false)
+        openPlots[i] = parts
+    })
 });
 
 document.addEventListener('keydown', function(event) {
@@ -214,15 +215,17 @@ async function getPlots(instrumentId,panel){
         alert('Error: ' + error.message); // display an error message in an alert
     }
 };
-async function populateTile(plotId,panel){
+async function populateTile(plotId, panel, changeUrlParams=true){
     const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
     try {
         const imageContainer = document.getElementById(panel);
         const image = imageContainer.querySelector('img');
         image.src = '$APIURL/visualizations/byID/'+plotId+'/'+ymd;
-        params.set(panel, openPlots[parseInt(panel[1]) -1].join(','));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.pushState({}, '', newUrl);
+        if(changeUrlParams) {
+            params.set(panel, openPlots[parseInt(panel[1]) -1].join(','));
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            window.history.pushState({}, '', newUrl);
+        }
         const header = document.getElementById(`header${parseInt(panel[1])}`);
         header.innerHTML = openPlots[parseInt(panel[1]) -1].join('\t');
         // console.log('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);

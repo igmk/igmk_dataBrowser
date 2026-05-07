@@ -11,7 +11,7 @@ let p2_info = params.get('p2');
 let p3_info = params.get('p3');
 let p4_info = params.get('p4');
 // let state = params.get('state');
-let menu_state = params.get('ms') ? params.get('ms').split(',') : [];
+let menu_state = params.get('ms') ? params.get('ms').split(',') : ['',''];
 
 
 let currentOpenPanels =
@@ -20,6 +20,12 @@ let currentOpenPanels =
 
 if (!currentOpenPanels.length) {
     currentOpenPanels.push('p1')
+}
+
+function updateMenuUrl() {
+    params.set('ms', menu_state.join(','));
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({}, '', newUrl);
 }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -188,10 +194,8 @@ function populateGrid(data,state,panel) {
                 document.getElementById("selectionMenu").style.display = "none";
                 document.getElementById("plotsWrapper").style.display = "grid";   
             });
-        menu_state = openPlots[parseInt(panel[1]) -1]
-        params.set('ms', menu_state.join(','));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.pushState({}, '', newUrl);
+        menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
+        updateMenuUrl();
         } else {alert("unknown state")} 
 
         // ---- add tile to the grid ----
@@ -349,12 +353,16 @@ function treeNavBack() {
     } else {
         console.log('Error w/ back button');
     }
+    menu_state = openPlots[selectedPanel].slice(0,-1);
+    updateMenuUrl();
     changePlot(`p${selectedPanel+1}`);
 };
 
 function treeNavClose() {
     document.getElementById("selectionMenu").style.display = "none";
     document.getElementById("plotsWrapper").style.display = "grid";
+    menu_state = ['','']
+    updateMenuUrl();
 };
 
 async function searchItems() {

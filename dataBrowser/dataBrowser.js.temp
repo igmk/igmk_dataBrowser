@@ -189,6 +189,9 @@ function populateGrid(data,state,panel) {
                 document.getElementById("plotsWrapper").style.display = "grid";   
             });
         menu_state = openPlots[parseInt(panel[1]) -1]
+        params.set('ms', menu_state.join(','));
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({}, '', newUrl);
         } else {alert("unknown state")} 
 
         // ---- add tile to the grid ----

@@ -43,8 +43,8 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!info) return
 
         const parts = info.split(',')
-        populateTile(parts[2], `p${i + 1}`, changeUrlParams=false)
         openPlots[i] = parts
+        populateTile(parts[2], `p${i + 1}`, changeUrlParams=false)
     })
 });
 

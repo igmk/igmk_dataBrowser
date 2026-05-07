@@ -10,8 +10,9 @@ let p1_info = params.get('p1');
 let p2_info = params.get('p2');
 let p3_info = params.get('p3');
 let p4_info = params.get('p4');
-let state = params.get('state');
-let menu_state = params.get('ms');
+// let state = params.get('state');
+let menu_state = params.get('ms').split(',');
+
 
 let currentOpenPanels =
     [p1_info, p2_info, p3_info, p4_info]
@@ -187,6 +188,7 @@ function populateGrid(data,state,panel) {
                 document.getElementById("selectionMenu").style.display = "none";
                 document.getElementById("plotsWrapper").style.display = "grid";   
             });
+        menu_state = openPlots[parseInt(panel[1]) -1]
         } else {alert("unknown state")} 
 
         // ---- add tile to the grid ----

@@ -9,7 +9,7 @@ fetch("https://api.herz-campaigns.de/sites")
 
     Object.keys(sites).forEach(id => {
 
-        fetch(`$APIURL/sites/${id}`)
+        fetch(`https://api.herz-campaigns.de/sites/${id}`)
         .then(res => {
             if (!res.ok) throw new Error("HTTP " + res.status);
             return res.json();

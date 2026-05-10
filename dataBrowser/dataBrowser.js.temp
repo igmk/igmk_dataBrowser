@@ -245,8 +245,10 @@ async function populateTile(plotId, panel, changeUrlParams=true){
         }
         const header = document.getElementById(`header${parseInt(panel[1])}`);
         header.innerHTML = openPlots[parseInt(panel[1]) -1].map((item, i) => {
-            const url = BASE_URL + openPlots[parseInt(panel[1]) -1].slice(0, i + 1).join(',');
+            if (i<=1) {
+            const url = 'https://browser.herz-campaigns.de/?ms=' + openPlots[parseInt(panel[1]) -1].slice(0, i + 1).join('%2C');
             return `<a href="${url}">${item}</a>`;
+            }
         }).join('\t');
         // console.log('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
         // const response = await fetch('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);

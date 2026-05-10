@@ -20,7 +20,9 @@ fetch("https://api.herz-campaigns.de/sites")
             .addTo(map)
             .bindPopup(`<a href="https://browser.herz-campaigns.de/?ms=${site.url}%2C">${site.siteHumanReadable}</a>`)
             .on("mouseover", function () { this.openPopup(); })
-            .on("mouseout", function () { this.closePopup(); });
+            .on("mouseout", function () {
+                const popup = this.getPopup().getElement();
+                popup.addEventListener("mouseleave", () => marker.closePopup()); });
 
         });
 

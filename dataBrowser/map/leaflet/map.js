@@ -18,7 +18,9 @@ fetch("https://api.herz-campaigns.de/sites")
 
             L.marker([site.lat, site.lon])
             .addTo(map)
-            .bindPopup(site.siteHumanReadable);
+            .bindPopup(`<a href="https://browser.herz-campaigns.de/?ms=${site.url}%2C">${site.siteHumanReadable}</a>`)
+            .on("mouseover", function () { this.openPopup(); })
+            .on("mouseout", function () { this.closePopup(); });
 
         });
 

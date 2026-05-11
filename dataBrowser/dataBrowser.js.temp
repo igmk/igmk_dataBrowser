@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", function() {
         openPlots[i] = parts
         populateTile(parts[2], `p${i + 1}`, changeUrlParams=false)
     })
+    mapButton();
     if (menu_state[0] !== '') {
         openPlots[0] = [...menu_state, ''];
         changePlot('p1');

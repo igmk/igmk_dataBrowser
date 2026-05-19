@@ -184,9 +184,9 @@ function populateGrid(data,state,panel) {
         } else if (state==="plots"){
             const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
             img.src = '$APIURL/visualizations/byID/'+value+'/'+ymd;
-            img.onerror = function() {
-                tile.style.display = "none";
-            };
+            // img.onerror = function() {
+            //     tile.style.display = "none";
+            // };
             img.addEventListener('recalcThumbnails', () => {
                 const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
                 img.src = '$APIURL/visualizations/byID/'+value+'/'+ymd;

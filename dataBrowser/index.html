@@ -13,16 +13,14 @@
 	</head>
 	<body>
 		<div class="global-controls">
-			<a href="https://uni-koeln.sciebo.de/apps/forms/pRFdHmaFq5qw9xSS" style="color: #ea564f;  font-weight: bold;">FEEDBACK FORM</a>
 			<button type="button" id="treeNavBack" onclick="treeNavBack()">Go Back</button>
 			<button type="button" id="mapButton" onclick="mapButton()">Show Map</button>
 			<button type="button" id="o" onclick="newPanel()">Add Panel</button>
-			<a class="prev arrow" onclick="updateDate(-1)">&#10094;</a>
-			
-			<input type="date" id="datePicker" name="date">
-			
-			
-			<a class="next arrow" onclick="updateDate(1)">&#10095;</a>
+			<div class="date-controls">
+				<a class="prev arrow" onclick="updateDate(-1)">&#10094;</a>
+				<input type="date" id="datePicker" name="date">
+				<a class="next arrow" onclick="updateDate(1)">&#10095;</a>
+			</div>
 			<button type="button" id="treeNavClose" onclick="treeNavClose()">Close Interface</button>
 			<img src="./img/logo.png" id="logo">
 			<input type="text" id="searchBar" placeholder="Search tags..." onkeyup="searchItems()">
@@ -35,7 +33,7 @@
 					<button type="button" id="b1" onclick="closePanel('b1')">X</button>
 					
 				</div>
-				<img src="./img/placeholder.png">
+				<img src="./img/placeholder.svg">
 			</div>
 			<div class="panel" id="p2">
 				<div class="panel-controls">
@@ -43,7 +41,7 @@
 					<a id="header2"></a>
 					<button type="button" id="b2" onclick="closePanel('b2')">X</button>
 				</div>
-				<img src="./img/placeholder.png">
+				<img src="./img/placeholder.svg">
 			</div>
 			<div class="panel" id="p3">
 				<div class="panel-controls">
@@ -51,7 +49,7 @@
 					<a id="header3"></a>
 					<button type="button" id="b3" onclick="closePanel('b3')">X</button>
 				</div>
-				<img src="./img/placeholder.png">
+				<img src="./img/placeholder.svg">
 			</div>
 			<div class="panel" id="p4">
 				<div class="panel-controls">
@@ -59,7 +57,7 @@
 					<a id="header4"></a>
 					<button type="button" id="b4" onclick="closePanel('b4')">X</button>
 				</div>
-				<img src="./img/placeholder.png">
+				<img src="./img/placeholder.svg">
 			</div>
 		</div>
 		<div id="selectionMenu"></div>

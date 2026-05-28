@@ -70,17 +70,34 @@ img {
     margin-left: 5px;
 }
 
+.date-controls {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 2px 10px;
+    gap: 4px;
+}
+
+#datePicker {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    color-scheme: dark;
+}
+
 .arrow {
     cursor: pointer;
-    /* position: absolute;
-    top: 50%; */
-    font-size:3em;
-    transform:  translate(0,-5%);
-
-    padding-left: 2%;
-    padding-right: 2% ;
-    border-radius: 6px 6px 6px 6px;
-    /* text-shadow: dimgray 5px 0px, dimgray -5px 0px; */
+    font-size: 1.6em;
+    color: #ffffff;
+    padding: 0 4px;
+    border-radius: 6px;
+    line-height: 1;
+    user-select: none;
 }
 
 .next {
@@ -108,9 +125,9 @@ img {
     color: dimgray;
   }
 
-/* #treeNavBack, #treeNavClose {
+#treeNavBack, #treeNavClose {
     display: none;
-} */
+}
 
 #selectionMenu {
     display: none;

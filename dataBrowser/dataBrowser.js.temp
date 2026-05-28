@@ -317,6 +317,32 @@ function updatePanelPositions(openPanels) {
     });
 }
 
+function goToToday() {
+    const today = new Date().toISOString().split('T')[0];
+    const datePicker = document.getElementById("datePicker");
+    datePicker.value = today;
+    selectedDate = today;
+    updateTiles();
+    const images = document.querySelectorAll('img');
+    images.forEach((image) => { image.dispatchEvent(recalcThumbnailsEvent); });
+    params.set('date', today);
+    window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+}
+
+function goToYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const ymd = yesterday.toISOString().split('T')[0];
+    const datePicker = document.getElementById("datePicker");
+    datePicker.value = ymd;
+    selectedDate = ymd;
+    updateTiles();
+    const images = document.querySelectorAll('img');
+    images.forEach((image) => { image.dispatchEvent(recalcThumbnailsEvent); });
+    params.set('date', ymd);
+    window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+}
+
 function updateDate(shift){
     datePicker = document.getElementById("datePicker")
     const currentDate = new Date(datePicker.value); 

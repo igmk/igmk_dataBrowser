@@ -44,6 +44,13 @@ grid-template-rows: repeat(4, 1fr);
     box-sizing: border-box;
 }
 
+.btn-icon {
+    width: auto;
+    height: 16px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
 .global-controls button {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
@@ -136,6 +143,7 @@ img {
     outline: none;
     cursor: pointer;
     color-scheme: dark;
+    width: 140px;
 }
 
 .arrow {

@@ -14,7 +14,11 @@
 	<body>
 		<div class="global-controls">
 			<button type="button" id="treeNavBack" onclick="treeNavBack()" title="Go Back">&#8592;</button>
-			<button type="button" id="mapButton" onclick="mapButton()" title="Show Map">&#128506;</button>
+			<button type="button" id="mapButton" onclick="mapButton()" title="Show Map"><img src="./map/leaflet/images/marker-icon.png" class="btn-icon"> Map</button>
+			<div id="searchContainer">
+				<button type="button" id="searchToggle" onclick="toggleSearch()" title="Search">&#8981;</button>
+				<input type="text" id="searchBar" placeholder="Search tags..." onkeyup="searchItems()">
+			</div>
 			<button type="button" id="o" onclick="newPanel()" title="Add Panel">&#43;</button>
 			<div class="date-controls">
 				<a class="prev arrow" onclick="updateDate(-1)">&#10094;</a>
@@ -22,10 +26,6 @@
 				<a class="next arrow" onclick="updateDate(1)">&#10095;</a>
 			</div>
 			<button type="button" id="treeNavClose" onclick="treeNavClose()" title="Close Interface">&#10005;</button>
-			<div id="searchContainer">
-				<button type="button" id="searchToggle" onclick="toggleSearch()" title="Search">&#128269;</button>
-				<input type="text" id="searchBar" placeholder="Search tags..." onkeyup="searchItems()">
-			</div>
 			<img src="./img/logo.png" id="logo">
 		</div>
 		<div class="wrapper" id="plotsWrapper">

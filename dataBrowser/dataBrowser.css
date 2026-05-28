@@ -34,17 +34,65 @@ grid-template-rows: repeat(4, 1fr);
 
 .global-controls {
     width: 100vw;
-    height:6vh;
+    height: 6vh;
     align-items: center;
     display: flex;
     justify-content: center;
+    gap: 6px;
     background-color: #005176;
-    flex: 1;
+    padding: 0 12px;
+    box-sizing: border-box;
 }
 
+.global-controls button {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+}
+
+.global-controls button:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+#searchContainer {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: width 0.25s ease;
+}
+
+#searchToggle {
+    background: transparent !important;
+    border-radius: 20px !important;
+    padding: 4px 10px !important;
+    flex-shrink: 0;
+}
 
 #searchBar {
-display: none;
+    display: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 0.9rem;
+    padding: 4px 10px 4px 0;
+    width: 160px;
+}
+
+#searchBar::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#searchBar.open {
+    display: block;
 }
 
 img {

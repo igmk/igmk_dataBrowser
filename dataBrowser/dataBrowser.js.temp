@@ -132,7 +132,7 @@ async function changePlot(panel) {
     selectedPanel = parseInt(panel[1]) - 1;
     var currentPlotTree = openPlots[parseInt(panel[1]) -1]
     document.getElementById("selectionMenu").style.display = "grid";
-    document.getElementById("searchBar").style.display = "block";
+    document.getElementById("searchBar").classList.add("open");
     document.getElementById("plotsWrapper").style.display = "none";
     document.getElementById("treeNavBack").style.display = "inline";
     document.getElementById("treeNavClose").style.display = "inline";
@@ -217,6 +217,7 @@ function populateGrid(data,state,panel) {
                 document.getElementById("plotsWrapper").style.display = "grid";
                 document.getElementById("treeNavBack").style.display = "none";
                 document.getElementById("treeNavClose").style.display = "none";
+                document.getElementById("searchBar").classList.remove("open");
             });
         menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
         updateMenuUrl();
@@ -361,16 +362,18 @@ function mapButton() {
         document.getElementById("selectionMenu").style.display = "none";
         document.getElementById("plotsWrapper").style.display = "none";
         document.getElementById('mapFrame').style.display = 'block';
-        document.getElementById('mapButton').textContent = 'Hide Map';
+        document.getElementById('mapButton').title = 'Hide Map';
         document.getElementById("treeNavBack").style.display = "none";
         document.getElementById("treeNavClose").style.display = "none";
+        document.getElementById("searchBar").classList.remove("open");
     } else {
         document.getElementById("selectionMenu").style.display = "none";
         document.getElementById("plotsWrapper").style.display = "grid";
         document.getElementById('mapFrame').style.display = 'none';
         document.getElementById("treeNavBack").style.display = "none";
         document.getElementById("treeNavClose").style.display = "none";
-        document.getElementById('mapButton').textContent = 'Show Map';
+        document.getElementById("searchBar").classList.remove("open");
+        document.getElementById('mapButton').title = 'Show Map';
 
     };
     mapActive = !mapActive;
@@ -391,11 +394,18 @@ function treeNavBack() {
     changePlot(`p${selectedPanel+1}`);
 };
 
+function toggleSearch() {
+    const bar = document.getElementById("searchBar");
+    bar.classList.toggle("open");
+    if (bar.classList.contains("open")) bar.focus();
+};
+
 function treeNavClose() {
     document.getElementById("selectionMenu").style.display = "none";
     document.getElementById("plotsWrapper").style.display = "grid";
     document.getElementById("treeNavBack").style.display = "none";
     document.getElementById("treeNavClose").style.display = "none";
+    document.getElementById("searchBar").classList.remove("open");
     menu_state = ['','']
     updateMenuUrl();
 };
@@ -516,6 +526,7 @@ async function searchItems() {
             document.getElementById("plotsWrapper").style.display = "grid";
             document.getElementById("treeNavBack").style.display = "none";
             document.getElementById("treeNavClose").style.display = "none";
+            document.getElementById("searchBar").classList.remove("open");
         });
         grid.appendChild(tile);
     });

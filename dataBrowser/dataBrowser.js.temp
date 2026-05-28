@@ -6,6 +6,13 @@ var selectedPanel;
 const url = new URL(window.location.href);
 const params = url.searchParams;
 let selectedDate = params.get('date');
+if (selectedDate === '0') {
+    selectedDate = new Date().toISOString().split('T')[0];
+} else if (selectedDate === '-1') {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    selectedDate = yesterday.toISOString().split('T')[0];
+}
 let p1_info = params.get('p1');
 let p2_info = params.get('p2');
 let p3_info = params.get('p3');

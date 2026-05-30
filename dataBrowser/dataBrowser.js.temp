@@ -316,6 +316,36 @@ async function getPlots(instrumentId,panel){
         alert('Error: ' + error.message); // display an error message in an alert
     }
 };
+// ---- Breadcrumb label resolution: map site/instrument ids to their display
+// names via the API, cached (and request-deduped) so date changes and multiple
+// panels don't refetch. Falls back to the id if a name can't be resolved. ----
+let sitesMetaPromise;
+function fetchSitesMeta() {
+    if (!sitesMetaPromise) {
+        sitesMetaPromise = fetch('$APIURL/sites').then(r => r.json()).catch(() => ({}));
+    }
+    return sitesMetaPromise;
+}
+const instMetaPromises = {};
+function fetchInstrumentsMeta(siteId) {
+    if (!instMetaPromises[siteId]) {
+        instMetaPromises[siteId] = fetch('$APIURL/sites/' + siteId + '/instruments').then(r => r.json()).catch(() => ({}));
+    }
+    return instMetaPromises[siteId];
+}
+async function siteLabel(siteId) {
+    if (!siteId) return '';
+    const sites = await fetchSitesMeta();
+    return sites[siteId] || siteId;
+}
+async function instrumentLabel(siteId, instId) {
+    if (!instId) return '';
+    if (!siteId) return instId;
+    const insts = await fetchInstrumentsMeta(siteId);
+    const entry = insts[instId];
+    return (entry && entry.description) ? entry.description : instId;
+}
+
 async function populateTile(plotId, panel, changeUrlParams=true){
     const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
     try {
@@ -329,19 +359,26 @@ async function populateTile(plotId, panel, changeUrlParams=true){
         }
         const header = document.getElementById(`header${parseInt(panel[1])}`);
         const tree = openPlots[parseInt(panel[1]) -1];
+        // Resolve ids -> human-readable names for the breadcrumb labels.
+        const labels = [
+            await siteLabel(tree[0]),
+            await instrumentLabel(tree[0], tree[1]),
+            tree[2]
+        ];
         header.innerHTML = tree
-            .map((item, i) => {
-                if (!item) return ''; // skip empty levels (e.g. search-opened plots)
+            .map((id, i) => {
+                if (!id) return ''; // skip empty levels (e.g. search-opened plots)
+                const label = labels[i] || id;
                 if (i < 2) {
                     // site / instrument: link to the step where this level is chosen
                     // (ms filled up to the previous level). Handled in-app so finishing
                     // the selection repopulates this same panel's tile.
                     const ms = tree.slice(0, i).join(',');
                     return `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
-                         + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${item}">${item}</a>`;
+                         + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${label}">${label}</a>`;
                 }
-                // plot: the current selection, not clickable
-                return `<span class="crumb crumb-current" title="${item}">${item}</span>`;
+                // plot name: the current selection, not clickable
+                return `<span class="crumb crumb-current" title="${label}">${label}</span>`;
             })
             .filter(Boolean)
             .join('<span class="crumb-sep">›</span>');

@@ -153,50 +153,52 @@ grid-template-rows: repeat(4, 1fr);
     background: rgba(255, 255, 255, 0.35);
 }
 
-/* Breadcrumb: take the remaining space in the controls bar, single line, centered */
+/* Breadcrumb: take the remaining space in the controls bar, single line */
 .panel-controls .breadcrumb {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 5px;
     overflow: hidden;
     white-space: nowrap;
 }
 
-/* Individual crumb: subtle pill, truncates if the id is long, underlines on hover */
+/* Individual crumb: bright pill, truncates if the name is long, underlines on hover */
 .panel-controls .crumb {
     color: #ffffff;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
+    font-weight: 600;
     text-decoration: none;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.18);
+    padding: 3px 11px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.28);
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 14ch;
+    max-width: 18ch;
     transition: background 0.15s ease;
 }
 
 .panel-controls .crumb:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.45);
     text-decoration: underline;
 }
 
-/* Current selection (the plot): shown but not interactive */
+/* Current selection (the plot): most prominent, but not interactive */
 .panel-controls .crumb-current,
 .panel-controls .crumb-current:hover {
     background: none;
     cursor: default;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .panel-controls .crumb-sep {
     flex: 0 0 auto;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
 }
 
 .date-controls {

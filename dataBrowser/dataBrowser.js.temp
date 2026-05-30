@@ -38,14 +38,7 @@ function updateMenuUrl() {
 document.addEventListener("DOMContentLoaded", function() {
     panels = document.querySelectorAll('.panel');
     var dateInput = document.getElementById('datePicker');
-    dateInput.addEventListener('change', () => {
-        selectedDate = dateInput.value;
-        updateTiles();
-        const images = document.querySelectorAll('img');
-        images.forEach((image) => {
-            image.dispatchEvent(recalcThumbnailsEvent);
-        });
-    });
+    dateInput.addEventListener('change', commitDate);
     applyStateFromUrl();
 });
 
@@ -242,9 +235,11 @@ function populateGrid(data,state,panel) {
             tile.addEventListener('click', () => {
                 openPlots[parseInt(panel[1])-1][1] = key;
                 openPlots[parseInt(panel[1])-1][2] = '';
+                menu_state = openPlots[parseInt(panel[1])-1].slice(0,-1);
+                updateMenuUrl();
                 getPlots(key,panel);
             });
-            valueEl.textContent = value.description 
+            valueEl.textContent = value.description
         } else if (state==="plots"){
             const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
             img.src = '$APIURL/visualizations/byID/'+value+'/'+ymd;
@@ -262,16 +257,13 @@ function populateGrid(data,state,panel) {
             tile.addEventListener('click', () => {
                 openPlots[parseInt(panel[1])-1][2] = value;
                 params.delete('ms');
-                const newUrl = `${window.location.pathname}?${params.toString()}`;
-                window.history.pushState({}, '', newUrl);
+                // populateTile sets the pN param and pushes a single history entry
                 populateTile(value,panel);
                 document.getElementById("selectionMenu").style.display = "none";
                 document.getElementById("plotsWrapper").style.display = "grid";
                 exitMenuMode();
             });
-        menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
-        updateMenuUrl();
-        } else {alert("unknown state")} 
+        } else {alert("unknown state")}
 
         // ---- add tile to the grid ----
         grid.appendChild(tile);
@@ -380,17 +372,24 @@ function updatePanelPositions(openPanels) {
 }
 
 function updateDate(shift){
-    datePicker = document.getElementById("datePicker")
-    const currentDate = new Date(datePicker.value); 
+    const datePicker = document.getElementById("datePicker");
+    const currentDate = new Date(datePicker.value);
     const nextDay = new Date(currentDate);
-    nextDay.setDate(currentDate.getDate() + shift); 
+    nextDay.setDate(currentDate.getDate() + shift);
     datePicker.valueAsDate = nextDay;
+    commitDate();
+};
+
+// Apply the date currently shown in the picker: re-render the open plots,
+// refresh thumbnails, and record the date in the URL. Shared by the arrow
+// buttons/keys (updateDate) and the calendar picker's change event.
+function commitDate(){
+    selectedDate = document.getElementById("datePicker").value;
     updateTiles();
-    const images = document.querySelectorAll('img');
-    images.forEach((image) => {
+    document.querySelectorAll('img').forEach((image) => {
         image.dispatchEvent(recalcThumbnailsEvent);
     });
-    params.set('date', datePicker.value);
+    params.set('date', selectedDate);
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.pushState({}, '', newUrl);
 };
@@ -402,7 +401,7 @@ function updateTiles(){
         const image = imageContainer.querySelector('img');
         const plotUrl = image.src;
         const plotId = plotUrl.split('/')[5];
-        populateTile(plotId,panel);
+        populateTile(plotId,panel,false);
     };
 };
 

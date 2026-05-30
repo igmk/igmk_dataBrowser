@@ -201,77 +201,77 @@ function populateGrid(data,state,panel) {
     const grid = document.getElementById('selectionMenu');
     grid.innerHTML = '';
     grid.dataset.state = state;
+    Object.entries(data).forEach(([key, value]) => {
+        grid.appendChild(createTile(key, value, state, panel));
+    });
+};
 
-    const entries = Object.entries(data);
-    entries.forEach(([key, value]) => {
-        // ---- create tile element ----
-        const tile = document.createElement('div');
-        tile.className = 'tile';
+// Build a single selection-menu tile. Shared by populateGrid (sites/instruments/plots
+// navigation) and searchItems (search results). `state` drives the click behaviour:
+//   sites       -> value is the display name; opens that site's instruments
+//   instruments -> value is {description} (navigation) or a plain string (search); opens its plots
+//   plots       -> value is the plotName / visualization id; opens the plot in `panel`
+function createTile(key, value, state, panel) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
 
-        // ---- tile content ----
-        const valueEl = document.createElement('div');
-        valueEl.className = 'tile-value';
-        valueEl.textContent = value;          // the visible text
+    const valueEl = document.createElement('div');
+    valueEl.className = 'tile-value';
+    valueEl.textContent = value;          // the visible text
 
-        const keyEl = document.createElement('div');
-        keyEl.className = 'tile-key';
-        keyEl.textContent = key;              // optional – shows the key too
-        
-        const img = document.createElement('img');
-        img.className = 'tile-img';
-        img.src = 'img/thumbnails/'+key+'.jpg';
-        
-        tile.appendChild(valueEl);
-        tile.appendChild(keyEl);
-        tile.appendChild(img)
+    const keyEl = document.createElement('div');
+    keyEl.className = 'tile-key';
+    keyEl.textContent = key;              // optional – shows the key too
 
-        if (state==="sites") {
-            tile.addEventListener('click', () => {
-                openPlots[parseInt(panel[1]) -1] = [key, '', ''];
-                menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
-                updateMenuUrl();
-                getInstruments(key,panel);
-            });
-        } else if (state==="instruments"){
-            tile.addEventListener('click', () => {
-                openPlots[parseInt(panel[1])-1][1] = key;
-                openPlots[parseInt(panel[1])-1][2] = '';
-                menu_state = openPlots[parseInt(panel[1])-1].slice(0,-1);
-                updateMenuUrl();
-                getPlots(key,panel);
-            });
-            valueEl.textContent = value.description
-        } else if (state==="plots"){
+    const img = document.createElement('img');
+    img.className = 'tile-img';
+    img.src = 'img/thumbnails/'+key+'.jpg';
+
+    tile.appendChild(valueEl);
+    tile.appendChild(keyEl);
+    tile.appendChild(img);
+
+    if (state==="sites") {
+        tile.addEventListener('click', () => {
+            openPlots[parseInt(panel[1]) -1] = [key, '', ''];
+            menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
+            updateMenuUrl();
+            getInstruments(key,panel);
+        });
+    } else if (state==="instruments"){
+        // navigation passes {description, ...}; search passes a plain display string
+        valueEl.textContent = (value && value.description) ? value.description : value;
+        tile.addEventListener('click', () => {
+            openPlots[parseInt(panel[1])-1][1] = key;
+            openPlots[parseInt(panel[1])-1][2] = '';
+            menu_state = openPlots[parseInt(panel[1])-1].slice(0,-1);
+            updateMenuUrl();
+            getPlots(key,panel);
+        });
+    } else if (state==="plots"){
+        const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
+        img.src = '$APIURL/visualizations/byID/'+value+'/'+ymd;
+        img.addEventListener('recalcThumbnails', () => {
             const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
             img.src = '$APIURL/visualizations/byID/'+value+'/'+ymd;
-            // img.onerror = function() {
-            //     tile.style.display = "none";
-            // };
-            img.addEventListener('recalcThumbnails', () => {
-                const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-                img.src = '$APIURL/visualizations/byID/'+value+'/'+ymd;
-                tile.style.display = "block";
-                img.onerror = function() {
-                    tile.style.display = "none";
-                };
-            });
-            tile.addEventListener('click', () => {
-                openPlots[parseInt(panel[1])-1][2] = value;
-                params.delete('ms');
-                // populateTile sets the pN param and pushes a single history entry
-                populateTile(value,panel);
-                document.getElementById("selectionMenu").style.display = "none";
-                document.getElementById("plotsWrapper").style.display = "grid";
-                exitMenuMode();
-            });
-        } else {alert("unknown state")}
+            tile.style.display = "block";
+            img.onerror = function() {
+                tile.style.display = "none";
+            };
+        });
+        tile.addEventListener('click', () => {
+            openPlots[parseInt(panel[1])-1][2] = value;
+            params.delete('ms');
+            // populateTile sets the pN param and pushes a single history entry
+            populateTile(value,panel);
+            document.getElementById("selectionMenu").style.display = "none";
+            document.getElementById("plotsWrapper").style.display = "grid";
+            exitMenuMode();
+        });
+    } else {alert("unknown state")}
 
-        // ---- add tile to the grid ----
-        grid.appendChild(tile);
-
-    });
-
-  };
+    return tile;
+};
 
 async function getInstruments(siteId,panel) {
     try {
@@ -472,122 +472,72 @@ function treeNavClose() {
     updateMenuUrl();
 };
 
+// Debounced as-you-type entry point (wired to #searchBar oninput).
+let searchToken = 0;
+let searchDebounce;
+function onSearchInput() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(searchItems, 200);
+}
+
 async function searchItems() {
+    const grid = document.getElementById('selectionMenu');
     document.getElementById("selectionMenu").style.display = "grid";
     document.getElementById("plotsWrapper").style.display = "none";
+    document.getElementById("mapFrame").style.display = "none";
     enterMenuMode();
-    let query = document.getElementById("searchBar").value.toLowerCase();
-    const grid = document.getElementById('selectionMenu');
+
+    const query = document.getElementById("searchBar").value.trim();
+    if (!query) {
+        grid.innerHTML = '';
+        grid.dataset.state = 'search';
+        return;
+    }
+
+    // Open results into the panel being edited, else the first open panel.
+    let panel;
+    if (selectedPanel != null && currentOpenPanels.includes(`p${selectedPanel + 1}`)) {
+        panel = `p${selectedPanel + 1}`;
+    } else {
+        panel = currentOpenPanels[0] || 'p1';
+        selectedPanel = parseInt(panel[1]) - 1; // keep Back/Close controls in sync
+    }
+
+    // Guard against out-of-order responses from rapid typing.
+    const token = ++searchToken;
+    let data;
+    try {
+        const res = await fetch(`$APIURL/search/${encodeURIComponent(query.toLowerCase())}`);
+        data = await res.json();
+    } catch (error) {
+        console.error('Search failed:', error);
+        return;
+    }
+    if (token !== searchToken) return; // a newer search superseded this one
+
     grid.innerHTML = '';
     grid.dataset.state = 'search';
-    let results = await fetch(`$APIURL/search/${query}`);
-    console.log(results);
-    let data = await results.json();
-    
 
-    let inst = Object.entries(data.inst); 
-    inst.forEach(([key, value]) => {
-        console.log(key+"/"+value);
-        // ---- create tile element ----
-        const tile = document.createElement('div');
-        tile.className = 'tile';
+    const addSection = (label, entries, makeTile) => {
+        const keys = Object.keys(entries || {});
+        if (!keys.length) return;
+        const header = document.createElement('h3');
+        header.className = 'search-section';
+        header.textContent = label;
+        grid.appendChild(header);
+        keys.forEach((key) => grid.appendChild(makeTile(key, entries[key])));
+    };
 
-        // ---- tile content ----
-        const valueEl = document.createElement('div');
-        valueEl.className = 'tile-value';
-        valueEl.textContent = value;          // the visible text
+    addSection('Sites', data.sites, (key, value) => createTile(key, value, 'sites', panel));
+    addSection('Instruments', data.inst, (key, value) => createTile(key, value, 'instruments', panel));
+    // plots: key is the plotName/visualization id; value is the list of sites it covers (shown as subtitle)
+    addSection('Plots', data.plots, (key, value) =>
+        createTile(Array.isArray(value) ? value.join(', ') : value, key, 'plots', panel));
 
-        const keyEl = document.createElement('div');
-        keyEl.className = 'tile-key';
-        keyEl.textContent = key;              // optional – shows the key too
-        
-        const img = document.createElement('img');
-        img.className = 'tile-img';
-        img.src = 'img/thumbnails/'+key+'.jpg';
-        
-        tile.appendChild(valueEl);
-        tile.appendChild(keyEl);
-        tile.appendChild(img)
-        tile.addEventListener('click', () => {
-                openPlots[parseInt(panel[1])-1][1] = key;
-                openPlots[parseInt(panel[1])-1][2] = '';
-                getPlots(key,panel);
-            });
-        grid.appendChild(tile);
-    });
-    let sites = Object.entries(data.sites); 
-    sites.forEach(([key, value]) => {
-        console.log(key+"/"+value);
-        // ---- create tile element ----
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-
-        // ---- tile content ----
-        const valueEl = document.createElement('div');
-        valueEl.className = 'tile-value';
-        valueEl.textContent = value;          // the visible text
-
-        const keyEl = document.createElement('div');
-        keyEl.className = 'tile-key';
-        keyEl.textContent = key;              // optional – shows the key too
-        
-        const img = document.createElement('img');
-        img.className = 'tile-img';
-        img.src = 'img/thumbnails/'+key+'.jpg';
-        
-        tile.appendChild(valueEl);
-        tile.appendChild(keyEl);
-        tile.appendChild(img)
-        tile.addEventListener('click', () => {
-            openPlots[parseInt(panel[1]) -1] = [key, '', ''];
-            getInstruments(key,panel);
-        });
-        grid.appendChild(tile);
-    });
-    let plots = Object.entries(data.plots); 
-    plots.forEach(([key, value]) => {
-        console.log(key+"/"+value);
-        // ---- create tile element ----
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-
-        // ---- tile content ----
-        const valueEl = document.createElement('div');
-        valueEl.className = 'tile-value';
-        valueEl.textContent = key;          // the visible text
-
-        const keyEl = document.createElement('div');
-        keyEl.className = 'tile-key';
-        keyEl.textContent = value;              // optional – shows the key too
-        
-        const img = document.createElement('img');
-        img.className = 'tile-img';
-        img.src = 'img/thumbnails/'+key+'.jpg';
-        
-        tile.appendChild(valueEl);
-        tile.appendChild(keyEl);
-        tile.appendChild(img)
-        const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-        img.src = `${apiEndpoint}/visualizations/byID/${key}/${ymd}`;
-        console.log(img.src)
-        img.onerror = function() {
-            tile.style.display = "none";
-        };
-        img.addEventListener('recalcThumbnails', () => {
-            const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-            img.src = `${apiEndpoint}/visualizations/byID/${key}/${ymd}`;
-            tile.style.display = "block";
-            img.onerror = function() {
-                tile.style.display = "none";
-            };
-        });
-        tile.addEventListener('click', () => {
-            openPlots[parseInt(panel[1])-1][2] = value;
-            populateTile(value,panel);
-            document.getElementById("selectionMenu").style.display = "none";
-            document.getElementById("plotsWrapper").style.display = "grid";
-            exitMenuMode();
-        });
-        grid.appendChild(tile);
-    });
+    if (!grid.children.length) {
+        const empty = document.createElement('p');
+        empty.className = 'search-empty';
+        empty.textContent = 'No matches';
+        grid.appendChild(empty);
+    }
 };

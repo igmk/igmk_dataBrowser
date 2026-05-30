@@ -277,6 +277,20 @@ grid-template-rows: repeat(4, 1fr);
     display: none;
 }
 
+/* Search results: full-width category headers and empty-state message */
+.search-section {
+    grid-column: 1 / -1;
+    margin: .5rem 0 0;
+    text-align: left;
+    color: #005176;
+    font-size: 1rem;
+}
+
+.search-empty {
+    grid-column: 1 / -1;
+    color: #555;
+}
+
 .tile-img {
     width: 100%;
     height: auto;

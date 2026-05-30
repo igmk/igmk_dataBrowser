@@ -16,13 +16,16 @@ fetch("https://api.herz-campaigns.de/sites")
         })
         .then(site => {
 
+            const siteUrl = `https://browser.herz-campaigns.de/?ms=${id}%2C`;
+
             L.marker([site.lat, site.lon])
             .addTo(map)
-            .bindPopup(`<a href="https://browser.herz-campaigns.de/?ms=${id}%2C" target="_top">${site.siteHumanReadable}</a>`)
+            .bindPopup(`<a href="${siteUrl}" target="_top">${site.siteHumanReadable}</a>`)
             .on("mouseover", function () { this.openPopup(); })
             .on("mouseout", function () {
                 const popup = this.getPopup().getElement();
-                popup.addEventListener("mouseleave", () => marker.closePopup()); });
+                popup.addEventListener("mouseleave", () => marker.closePopup()); })
+            .on("click", function () { window.top.location.href = siteUrl; });
 
         });
 

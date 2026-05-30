@@ -328,12 +328,16 @@ async function populateTile(plotId, panel, changeUrlParams=true){
             window.history.pushState({}, '', newUrl);
         }
         const header = document.getElementById(`header${parseInt(panel[1])}`);
-        header.innerHTML = openPlots[parseInt(panel[1]) -1].map((item, i) => {
-            if (i<=1) {
-            const url = 'https://browser.herz-campaigns.de/?ms=' + openPlots[parseInt(panel[1]) -1].slice(0, i + 1).join('%2C');
-            return `<a href="${url}">${item}</a>`;
-            }
-        }).join('\t');
+        const tree = openPlots[parseInt(panel[1]) -1];
+        header.innerHTML = tree
+            .slice(0, 2) // site + instrument levels
+            .map((item, i) => {
+                if (!item) return ''; // skip empty levels (e.g. search-opened plots)
+                const url = 'https://browser.herz-campaigns.de/?ms=' + tree.slice(0, i + 1).join('%2C');
+                return `<a class="crumb" href="${url}" title="${item}">${item}</a>`;
+            })
+            .filter(Boolean)
+            .join('<span class="crumb-sep">›</span>');
         // console.log('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
         // const response = await fetch('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
         // const data = await response.json();

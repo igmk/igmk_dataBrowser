@@ -153,19 +153,41 @@ grid-template-rows: repeat(4, 1fr);
     background: rgba(255, 255, 255, 0.35);
 }
 
-/* Breadcrumb link: take remaining space and truncate instead of overflowing */
-.panel-controls > a {
+/* Breadcrumb: take the remaining space in the controls bar, single line, centered */
+.panel-controls .breadcrumb {
     flex: 1 1 auto;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
-    text-align: center;
 }
 
-.panel-controls a {
+/* Individual crumb: subtle pill, truncates if the id is long, underlines on hover */
+.panel-controls .crumb {
     color: #ffffff;
     font-size: 0.8rem;
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 14ch;
+    transition: background 0.15s ease;
+}
+
+.panel-controls .crumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+    text-decoration: underline;
+}
+
+.panel-controls .crumb-sep {
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
 }
 
 .date-controls {

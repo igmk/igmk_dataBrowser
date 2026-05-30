@@ -43,36 +43,26 @@ document.addEventListener("DOMContentLoaded", function() {
     initPanelZoom();
 });
 
-// Hover-to-enlarge: resting the cursor on a panel plot for a short dwell shows it
-// full-screen as an overlay; moving away hides it. Desktop (hover) only.
-let zoomTimer;
+// Click-to-enlarge: clicking a panel plot shows it full-screen as an overlay;
+// clicking the overlay (or pressing Esc) returns to the normal view.
 function initPanelZoom() {
-    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-
     const overlay = document.createElement('div');
     overlay.id = 'panelZoom';
     const big = document.createElement('img');
     overlay.appendChild(big);
     document.body.appendChild(overlay);
 
+    const closeZoom = () => overlay.classList.remove('open');
+    overlay.addEventListener('click', closeZoom);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeZoom();
+    });
+
     document.querySelectorAll('.panel img').forEach((img) => {
-        // Restart the dwell countdown on every movement so the overlay only opens
-        // after the cursor has been still for 800ms over the plot image, not merely
-        // present within its bounds.
-        const scheduleZoom = () => {
-            if (overlay.classList.contains('open')) return; // already shown; leave it
+        img.addEventListener('click', () => {
             if (img.src.includes('placeholder')) return;
-            clearTimeout(zoomTimer);
-            zoomTimer = setTimeout(() => {
-                big.src = img.src;
-                overlay.classList.add('open');
-            }, 800);
-        };
-        img.addEventListener('mouseenter', scheduleZoom);
-        img.addEventListener('mousemove', scheduleZoom);
-        img.addEventListener('mouseleave', () => {
-            clearTimeout(zoomTimer);
-            overlay.classList.remove('open');
+            big.src = img.src;
+            overlay.classList.add('open');
         });
     });
 }

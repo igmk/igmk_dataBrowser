@@ -56,13 +56,20 @@ function initPanelZoom() {
     document.body.appendChild(overlay);
 
     document.querySelectorAll('.panel img').forEach((img) => {
-        img.addEventListener('mouseenter', () => {
+        // Restart the dwell countdown on every movement so the overlay only opens
+        // after the cursor has been still for 800ms over the plot image, not merely
+        // present within its bounds.
+        const scheduleZoom = () => {
+            if (overlay.classList.contains('open')) return; // already shown; leave it
             if (img.src.includes('placeholder')) return;
+            clearTimeout(zoomTimer);
             zoomTimer = setTimeout(() => {
                 big.src = img.src;
                 overlay.classList.add('open');
             }, 800);
-        });
+        };
+        img.addEventListener('mouseenter', scheduleZoom);
+        img.addEventListener('mousemove', scheduleZoom);
         img.addEventListener('mouseleave', () => {
             clearTimeout(zoomTimer);
             overlay.classList.remove('open');

@@ -184,6 +184,15 @@ grid-template-rows: repeat(4, 1fr);
     text-decoration: underline;
 }
 
+/* Current selection (the plot): shown but not interactive */
+.panel-controls .crumb-current,
+.panel-controls .crumb-current:hover {
+    background: none;
+    cursor: default;
+    text-decoration: none;
+    font-weight: 600;
+}
+
 .panel-controls .crumb-sep {
     flex: 0 0 auto;
     color: rgba(255, 255, 255, 0.7);

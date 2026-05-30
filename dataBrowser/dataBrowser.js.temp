@@ -330,11 +330,18 @@ async function populateTile(plotId, panel, changeUrlParams=true){
         const header = document.getElementById(`header${parseInt(panel[1])}`);
         const tree = openPlots[parseInt(panel[1]) -1];
         header.innerHTML = tree
-            .slice(0, 2) // site + instrument levels
             .map((item, i) => {
                 if (!item) return ''; // skip empty levels (e.g. search-opened plots)
-                const url = 'https://browser.herz-campaigns.de/?ms=' + tree.slice(0, i + 1).join('%2C');
-                return `<a class="crumb" href="${url}" title="${item}">${item}</a>`;
+                if (i < 2) {
+                    // site / instrument: link to the step where this level is chosen
+                    // (ms filled up to the previous level). Handled in-app so finishing
+                    // the selection repopulates this same panel's tile.
+                    const ms = tree.slice(0, i).join(',');
+                    return `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
+                         + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${item}">${item}</a>`;
+                }
+                // plot: the current selection, not clickable
+                return `<span class="crumb crumb-current" title="${item}">${item}</span>`;
             })
             .filter(Boolean)
             .join('<span class="crumb-sep">›</span>');
@@ -347,6 +354,20 @@ async function populateTile(plotId, panel, changeUrlParams=true){
     } catch (error) {
         alert('Error: ' + error.message); // display an error message in an alert
     }
+};
+
+// Reopen the selection menu for `panel` at the step where breadcrumb `level`
+// (0 = site, 1 = instrument) is chosen: clear that level and everything after it,
+// then run the normal changePlot flow bound to this panel so completing the
+// selection repopulates the tile the breadcrumb belongs to.
+function breadcrumbNav(panel, level) {
+    const idx = parseInt(panel[1]) - 1;
+    const tree = openPlots[idx];
+    openPlots[idx] = [level > 0 ? tree[0] : '', '', ''];
+    menu_state = openPlots[idx].slice(0, -1);
+    selectedPanel = idx;
+    updateMenuUrl();
+    changePlot(panel);
 };
 
 function updatePanelPositions(openPanels) {

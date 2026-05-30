@@ -117,15 +117,49 @@ grid-template-rows: repeat(4, 1fr);
 }
 .panel-controls {
     height: 7%;
+    min-height: 32px;
+    max-height: 38px;
     align-items: center;
     display: flex;
     justify-content: space-between;
+    gap: 6px;
     background-color: #009dcc;
-    max-height: 30px;
-
+    padding: 0 6px;
+    box-sizing: border-box;
 }
-.changeButton{
-    margin-left: 5px;
+
+/* Pill buttons matching the header */
+.panel-controls button {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.panel-controls button:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Breadcrumb link: take remaining space and truncate instead of overflowing */
+.panel-controls > a {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.panel-controls a {
+    color: #ffffff;
+    font-size: 0.8rem;
 }
 
 .date-controls {
@@ -169,15 +203,10 @@ grid-template-rows: repeat(4, 1fr);
 }
 
 #b1, #b2, #b3, #b4 {
-    /* right: 0;
-    position: absolute; */
-    background-color: #ea564f;
-    margin-right: 3px;
-    cursor: pointer;
-
+    background: #ea564f;
 }
 #b1:hover, #b2:hover, #b3:hover, #b4:hover{
-    background-color: rgb(178, 12, 0);
+    background: #b20c00;
 }
 
 .prev:hover, .next:hover {
@@ -311,19 +340,12 @@ grid-template-rows: repeat(4, 1fr);
         max-height: 90px;
     }
 
-    /* Panel controls: larger tap targets, keep header link from overflowing */
+    /* Panel controls: larger tap targets */
     .panel-controls {
-        max-height: none;
+        max-height: 44px;
     }
 
-    .panel-controls a {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .changeButton,
-    #b1, #b2, #b3, #b4 {
+    .panel-controls button {
         min-height: 36px;
     }
 

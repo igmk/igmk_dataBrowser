@@ -322,6 +322,35 @@ grid-template-rows: repeat(4, 1fr);
     border: none;
 }
 
+/* Hover-to-enlarge overlay for panel plots. pointer-events:none lets the cursor
+   pass through to the plot underneath so it keeps :hover and auto-hides on leave. */
+#panelZoom {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2vh 2vw;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, .85);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s ease;
+    pointer-events: none;
+}
+
+#panelZoom.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+#panelZoom img {
+    max-width: 96vw;
+    max-height: 96vh;
+    object-fit: contain;
+}
+
 /* ---------- Mobile ---------- */
 @media (max-width: 600px) {
     #logo {

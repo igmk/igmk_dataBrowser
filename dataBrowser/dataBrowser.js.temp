@@ -40,7 +40,35 @@ document.addEventListener("DOMContentLoaded", function() {
     var dateInput = document.getElementById('datePicker');
     dateInput.addEventListener('change', commitDate);
     applyStateFromUrl();
+    initPanelZoom();
 });
+
+// Hover-to-enlarge: resting the cursor on a panel plot for a short dwell shows it
+// full-screen as an overlay; moving away hides it. Desktop (hover) only.
+let zoomTimer;
+function initPanelZoom() {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'panelZoom';
+    const big = document.createElement('img');
+    overlay.appendChild(big);
+    document.body.appendChild(overlay);
+
+    document.querySelectorAll('.panel img').forEach((img) => {
+        img.addEventListener('mouseenter', () => {
+            if (img.src.includes('placeholder')) return;
+            zoomTimer = setTimeout(() => {
+                big.src = img.src;
+                overlay.classList.add('open');
+            }, 800);
+        });
+        img.addEventListener('mouseleave', () => {
+            clearTimeout(zoomTimer);
+            overlay.classList.remove('open');
+        });
+    });
+}
 
 // Re-render the page whenever the URL changes via the browser's back/forward
 // buttons. Without this, pushState() updates the address bar but the content

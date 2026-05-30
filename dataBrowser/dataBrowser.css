@@ -47,16 +47,6 @@ grid-template-rows: repeat(4, 1fr);
     z-index: 10;
 }
 
-#primaryActions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-#menuToggle {
-    display: none;
-}
-
 .btn-icon {
     width: auto;
     height: 16px;
@@ -275,52 +265,24 @@ grid-template-rows: repeat(4, 1fr);
         height: auto;
         min-height: 56px;
         padding: 6px 10px;
-        justify-content: space-between;
+        justify-content: center;
         gap: 8px;
+        flex-wrap: wrap;
     }
 
-    .global-controls button,
-    #menuToggle {
+    .global-controls button {
         min-height: 44px;
         min-width: 44px;
         font-size: 1.05rem;
     }
 
-    #menuToggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Secondary actions collapse into a dropdown under the header */
-    #primaryActions {
+    /* Condensed icon-only controls: drop the "Map" text label */
+    .btn-label {
         display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        background-color: #005176;
-        padding: 8px;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
-        z-index: 9;
     }
 
-    #primaryActions.open {
-        display: flex;
-    }
-
-    #primaryActions > button,
-    #searchContainer {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    #searchBar.open {
-        flex: 1;
-        width: auto;
+    .btn-icon {
+        margin-right: 0;
     }
 
     .arrow {

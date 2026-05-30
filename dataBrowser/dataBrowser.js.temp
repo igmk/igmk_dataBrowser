@@ -98,7 +98,6 @@ function setPanelNumber() {
 };
 
 function newPanel() {
-    closeMobileMenu();
     if (currentOpenPanels.length < maxPanels) {
         var allIds = Array.from(panels).map(div => div.id);
         var availablePanels = allIds.filter(item => !currentOpenPanels.includes(item));
@@ -357,7 +356,6 @@ function updateTiles(){
 var mapActive = true;
 function mapButton() {
     exitMenuMode();
-    closeMobileMenu();
     if (mapActive) {
         document.getElementById("selectionMenu").style.display = "none";
         document.getElementById("plotsWrapper").style.display = "none";
@@ -391,14 +389,6 @@ function toggleSearch() {
     const bar = document.getElementById("searchBar");
     bar.classList.toggle("open");
     if (bar.classList.contains("open")) bar.focus();
-};
-
-function toggleMenu() {
-    document.getElementById("primaryActions").classList.toggle("open");
-};
-
-function closeMobileMenu() {
-    document.getElementById("primaryActions").classList.remove("open");
 };
 
 // Contextual header state: while picking a plot, show Back/Close and hide Map/Add.

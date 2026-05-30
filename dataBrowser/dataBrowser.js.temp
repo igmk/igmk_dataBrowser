@@ -391,7 +391,7 @@ function updatePanelPositions(openPanels) {
 
         const [gridColumn, gridRow] = layout[index];
 
-        panel.style.display = "block";
+        panel.style.display = "flex";
         panel.style.gridColumn = gridColumn;
         panel.style.gridRow = gridRow;
     });

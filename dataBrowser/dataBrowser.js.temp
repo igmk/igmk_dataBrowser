@@ -197,9 +197,10 @@ async function changePlot(panel) {
     }
 };
 
-function populateGrid(data,state,panel) {         
+function populateGrid(data,state,panel) {
     const grid = document.getElementById('selectionMenu');
     grid.innerHTML = '';
+    grid.dataset.state = state;
 
     const entries = Object.entries(data);
     entries.forEach(([key, value]) => {
@@ -478,6 +479,7 @@ async function searchItems() {
     let query = document.getElementById("searchBar").value.toLowerCase();
     const grid = document.getElementById('selectionMenu');
     grid.innerHTML = '';
+    grid.dataset.state = 'search';
     let results = await fetch(`$APIURL/search/${query}`);
     console.log(results);
     let data = await results.json();

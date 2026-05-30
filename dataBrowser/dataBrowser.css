@@ -264,12 +264,17 @@ grid-template-rows: repeat(4, 1fr);
     font-weight: 700;
     color: #1a1a1a;
     line-height: 1.2;
+    /* Wrap long tokens that have no spaces (e.g. wind_radar_lidar_..., a-b-c) */
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .tile-key {
     margin-top: .15rem;
     font-size: .8rem;
     color: #555;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* Third level (plot picker): hide the grey id subtitles */
@@ -280,10 +285,21 @@ grid-template-rows: repeat(4, 1fr);
 /* Search results: full-width category headers and empty-state message */
 .search-section {
     grid-column: 1 / -1;
-    margin: .5rem 0 0;
+    margin: 1rem 0 .25rem;
+    padding: .4rem .75rem;
     text-align: left;
-    color: #005176;
-    font-size: 1rem;
+    color: #ffffff;
+    background: #005176;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+/* No big gap above the very first section */
+.search-section:first-child {
+    margin-top: 0;
 }
 
 .search-empty {
@@ -294,9 +310,7 @@ grid-template-rows: repeat(4, 1fr);
 .tile-img {
     width: 100%;
     height: auto;
-    aspect-ratio: 4 / 3;
     object-fit: contain;
-    background: #fff;
     border-radius: 4px;
     margin-top: .5rem;
 }

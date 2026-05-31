@@ -230,6 +230,7 @@ function populateGrid(data,state,panel) {
     Object.entries(data).forEach(([key, value]) => {
         grid.appendChild(createTile(key, value, state, panel));
     });
+    updateBackButton(state);
 };
 
 // Build a single selection-menu tile. Shared by populateGrid (sites/instruments/plots
@@ -237,7 +238,9 @@ function populateGrid(data,state,panel) {
 //   sites       -> value is the display name; opens that site's instruments
 //   instruments -> value is {description} (navigation) or a plain string (search); opens its plots
 //   plots       -> value is the plotName / visualization id; opens the plot in `panel`
-function createTile(key, value, state, panel) {
+// `fromSearch` marks a search result, which carries no parent context: selecting it
+// clears the unknown levels instead of inheriting whatever was previously in the tree.
+function createTile(key, value, state, panel, fromSearch=false) {
     const tile = document.createElement('div');
     tile.className = 'tile';
 
@@ -268,9 +271,10 @@ function createTile(key, value, state, panel) {
         // navigation passes {description, ...}; search passes a plain display string
         valueEl.textContent = (value && value.description) ? value.description : value;
         tile.addEventListener('click', () => {
-            openPlots[parseInt(panel[1])-1][1] = key;
-            openPlots[parseInt(panel[1])-1][2] = '';
-            menu_state = openPlots[parseInt(panel[1])-1].slice(0,-1);
+            const idx = parseInt(panel[1]) - 1;
+            // from search there is no known site context, so clear it
+            openPlots[idx] = [fromSearch ? '' : openPlots[idx][0], key, ''];
+            menu_state = openPlots[idx].slice(0,-1);
             updateMenuUrl();
             getPlots(key,panel);
         });
@@ -286,7 +290,9 @@ function createTile(key, value, state, panel) {
             };
         });
         tile.addEventListener('click', () => {
-            openPlots[parseInt(panel[1])-1][2] = value;
+            const idx = parseInt(panel[1]) - 1;
+            // from search there is no site/instrument context: breadcrumb is "Sites > plot"
+            openPlots[idx] = fromSearch ? ['', '', value] : [openPlots[idx][0], openPlots[idx][1], value];
             params.delete('ms');
             // populateTile sets the pN param and pushes a single history entry
             populateTile(value,panel);
@@ -528,18 +534,35 @@ function mapButton() {
 };
 
 function treeNavBack() {
-    var level = openPlots[selectedPanel].indexOf('');
-    if (level === -1 || level === 2) {
-        openPlots[selectedPanel][1] = '';
-        openPlots[selectedPanel][2] = '';
-    } else if (level === 1){
-        openPlots[selectedPanel] = Array(3).fill('');
+    const tree = openPlots[selectedPanel];
+    if (tree[1] !== '') {
+        // plots view -> instruments view (needs a site to go back to)
+        if (!tree[0]) return; // nothing above (search-opened); button is disabled anyway
+        openPlots[selectedPanel] = [tree[0], '', ''];
+    } else if (tree[0] !== '') {
+        // instruments view -> sites view
+        openPlots[selectedPanel] = ['', '', ''];
     } else {
-        console.log('Error w/ back button');
+        return; // already at the sites view
     }
     menu_state = openPlots[selectedPanel].slice(0,-1);
     updateMenuUrl();
     changePlot(`p${selectedPanel+1}`);
+};
+
+// Enable the Back button only when there is a level above the one currently shown:
+//   sites/search -> nothing above; instruments -> back to sites;
+//   plots -> back to instruments, but only if a site is set (search-opened plots have none).
+function updateBackButton(state) {
+    const btn = document.getElementById('treeNavBack');
+    if (!btn) return;
+    let canGoBack = false;
+    if (state === 'instruments') {
+        canGoBack = true;
+    } else if (state === 'plots') {
+        canGoBack = !!(openPlots[selectedPanel] && openPlots[selectedPanel][0]);
+    }
+    btn.disabled = !canGoBack;
 };
 
 function toggleSearch() {
@@ -611,6 +634,7 @@ async function searchItems() {
 
     grid.innerHTML = '';
     grid.dataset.state = 'search';
+    updateBackButton('search'); // search is not part of the tree nav
 
     const addSection = (label, entries, makeTile) => {
         const keys = Object.keys(entries || {});
@@ -622,11 +646,11 @@ async function searchItems() {
         keys.forEach((key) => grid.appendChild(makeTile(key, entries[key])));
     };
 
-    addSection('Sites', data.sites, (key, value) => createTile(key, value, 'sites', panel));
-    addSection('Instruments', data.inst, (key, value) => createTile(key, value, 'instruments', panel));
+    addSection('Sites', data.sites, (key, value) => createTile(key, value, 'sites', panel, true));
+    addSection('Instruments', data.inst, (key, value) => createTile(key, value, 'instruments', panel, true));
     // plots: key is the plotName/visualization id; value is the list of sites it covers (shown as subtitle)
     addSection('Plots', data.plots, (key, value) =>
-        createTile(Array.isArray(value) ? value.join(', ') : value, key, 'plots', panel));
+        createTile(Array.isArray(value) ? value.join(', ') : value, key, 'plots', panel, true));
 
     if (!grid.children.length) {
         const empty = document.createElement('p');

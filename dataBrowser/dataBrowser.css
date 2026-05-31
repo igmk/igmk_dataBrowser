@@ -74,6 +74,14 @@ grid-template-rows: repeat(4, 1fr);
     background: rgba(255, 255, 255, 0.28);
 }
 
+/* Disabled control (e.g. Back when there's no level above): dimmed, non-interactive */
+.global-controls button:disabled,
+.global-controls button:disabled:hover {
+    opacity: 0.4;
+    cursor: default;
+    background: rgba(255, 255, 255, 0.15);
+}
+
 #searchContainer {
     display: flex;
     align-items: center;

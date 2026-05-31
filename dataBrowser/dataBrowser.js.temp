@@ -116,7 +116,7 @@ function applyStateFromUrl() {
     ['p1', 'p2', 'p3', 'p4'].forEach((panel) => {
         const img = document.getElementById(panel).querySelector('img');
         img.src = './img/placeholder.svg';
-        document.getElementById(`header${panel[1]}`).innerHTML = '';
+        renderBreadcrumb(panel); // empty tree -> just the "Sites" root
     });
 
     [p1_info, p2_info, p3_info, p4_info].forEach((info, i) => {
@@ -175,6 +175,7 @@ function newPanel() {
         var newPanel = availablePanels[0];
         currentOpenPanels.push(newPanel);
         updatePanelPositions(currentOpenPanels);
+        renderBreadcrumb(newPanel); // show the "Sites" entry point on the new empty panel
     }
 };
 
@@ -357,51 +358,56 @@ async function populateTile(plotId, panel, changeUrlParams=true){
             const newUrl = `${window.location.pathname}?${params.toString()}`;
             window.history.pushState({}, '', newUrl);
         }
-        const header = document.getElementById(`header${parseInt(panel[1])}`);
-        const tree = openPlots[parseInt(panel[1]) -1];
-        // Resolve ids -> human-readable names for the breadcrumb labels.
-        const labels = [
-            await siteLabel(tree[0]),
-            await instrumentLabel(tree[0], tree[1]),
-            tree[2]
-        ];
-        header.innerHTML = tree
-            .map((id, i) => {
-                if (!id) return ''; // skip empty levels (e.g. search-opened plots)
-                const label = labels[i] || id;
-                if (i < 2) {
-                    // site -> instruments at that site; instrument -> that instrument's
-                    // plots (ms filled up to and including this level). Handled in-app so
-                    // finishing the selection repopulates this same panel's tile.
-                    const ms = tree.slice(0, i + 1).join(',');
-                    return `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
-                         + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${label}">${label}</a>`;
-                }
-                // plot name: the current selection, not clickable
-                return `<span class="crumb crumb-current" title="${label}">${label}</span>`;
-            })
-            .filter(Boolean)
-            .join('<span class="crumb-sep">›</span>');
-        // console.log('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
-        // const response = await fetch('$APIURL/instruments/'+openPlots[parseInt(panel[1]) -1][1]);
-        // const data = await response.json();
-        // const info = document.getElementById(`info${parseInt(panel[1])}`);
-        // info.href = data.wiki
-
+        await renderBreadcrumb(panel);
     } catch (error) {
         alert('Error: ' + error.message); // display an error message in an alert
     }
 };
 
-// Drill into breadcrumb `level` (0 = site, 1 = instrument) for `panel`: keep the
-// tree up to and including that level, clear everything deeper, then run the
-// normal changePlot flow bound to this panel. So clicking the site crumb shows
-// the instruments at that site, and the instrument crumb shows that instrument's
-// plots; completing the selection repopulates the tile the breadcrumb belongs to.
+// Build the breadcrumb for `panel` from openPlots: an always-present "Sites" root
+// (returns to site selection for this panel) followed by site / instrument links
+// and the current plot as a bold, non-clickable pill. Used for filled panels and,
+// with an empty tree, to show just "Sites" on empty panels.
+async function renderBreadcrumb(panel) {
+    const idx = parseInt(panel[1]) - 1;
+    const header = document.getElementById(`header${idx + 1}`);
+    if (!header) return;
+    const tree = openPlots[idx];
+    // Resolve ids -> human-readable names for the breadcrumb labels.
+    const labels = [
+        await siteLabel(tree[0]),
+        await instrumentLabel(tree[0], tree[1]),
+        tree[2]
+    ];
+    const sep = '<span class="crumb-sep" aria-hidden="true">›</span>';
+    let html = `<a class="crumb" href="?ms=" onclick="breadcrumbNav('${panel}', -1); return false;">Sites</a>`;
+    tree.forEach((id, i) => {
+        if (!id) return; // skip empty levels (e.g. search-opened plots)
+        const label = labels[i] || id;
+        if (i < 2) {
+            // site -> instruments at that site; instrument -> that instrument's plots
+            // (ms filled up to and including this level). Handled in-app so finishing
+            // the selection repopulates this same panel's tile.
+            const ms = tree.slice(0, i + 1).join(',');
+            html += sep + `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
+                  + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${label}">${label}</a>`;
+        } else {
+            // plot name: the current selection, not clickable
+            html += sep + `<span class="crumb crumb-current" title="${label}" aria-current="page">${label}</span>`;
+        }
+    });
+    header.innerHTML = html;
+    header.scrollLeft = header.scrollWidth; // keep the current crumb in view when it overflows
+};
+
+// Navigate to breadcrumb `level` for `panel`: -1 = Sites root (site picker),
+// 0 = site (instruments at that site), 1 = instrument (that instrument's plots).
+// Keep the tree up to and including the level, clear deeper, then run the normal
+// changePlot flow bound to this panel so completing the selection repopulates it.
 function breadcrumbNav(panel, level) {
     const idx = parseInt(panel[1]) - 1;
     const tree = openPlots[idx];
-    openPlots[idx] = [tree[0] || '', level >= 1 ? (tree[1] || '') : '', ''];
+    openPlots[idx] = [level >= 0 ? (tree[0] || '') : '', level >= 1 ? (tree[1] || '') : '', ''];
     menu_state = openPlots[idx].slice(0, -1);
     selectedPanel = idx;
     updateMenuUrl();

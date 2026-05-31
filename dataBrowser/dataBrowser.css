@@ -153,52 +153,60 @@ grid-template-rows: repeat(4, 1fr);
     background: rgba(255, 255, 255, 0.35);
 }
 
-/* Breadcrumb: take the remaining space in the controls bar, single line */
+/* Breadcrumb: take the remaining space in the controls bar, single line.
+   Scrolls horizontally (no clipping) when the trail is longer than the bar. */
 .panel-controls .breadcrumb {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    flex-wrap: nowrap;
     gap: 5px;
-    overflow: hidden;
     white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
 }
+.panel-controls .breadcrumb::-webkit-scrollbar { display: none; } /* WebKit */
 
-/* Individual crumb: bright pill, truncates if the name is long, underlines on hover */
+/* Trail crumb (site / instrument): translucent pill link; don't shrink (scroll instead) */
 .panel-controls .crumb {
+    flex: 0 0 auto;
     color: #ffffff;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
     padding: 3px 11px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.22);
+    max-width: 18ch;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 18ch;
     transition: background 0.15s ease;
 }
 
 .panel-controls .crumb:hover {
-    background: rgba(255, 255, 255, 0.45);
-    text-decoration: underline;
+    background: rgba(255, 255, 255, 0.4);
 }
 
-/* Current selection (the plot): most prominent, but not interactive */
+/* Current selection (the plot): the hero — solid high-contrast pill, not interactive */
 .panel-controls .crumb-current,
 .panel-controls .crumb-current:hover {
-    background: none;
+    background: #ffffff;
+    color: #005176;
+    font-size: 0.98rem;
+    font-weight: 700;
+    padding: 3px 13px;
     cursor: default;
     text-decoration: none;
-    font-weight: 700;
+    max-width: 22ch;
 }
 
 .panel-controls .crumb-sep {
     flex: 0 0 auto;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 700;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.95rem;
 }
 
 .date-controls {
@@ -241,11 +249,22 @@ grid-template-rows: repeat(4, 1fr);
     /* margin-left: 2%; */
 }
 
+/* Close panel: subtle ghost circle that turns red on hover (secondary action) */
 #b1, #b2, #b3, #b4 {
-    background: #ea564f;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
 }
 #b1:hover, #b2:hover, #b3:hover, #b4:hover{
-    background: #b20c00;
+    background: #ea564f;
 }
 
 .prev:hover, .next:hover {
@@ -450,8 +469,22 @@ grid-template-rows: repeat(4, 1fr);
         max-height: 44px;
     }
 
-    .panel-controls button {
-        min-height: 36px;
+    /* Smaller crumbs so more fit; the row scrolls (and auto-scrolls to the
+       current plot) for the rest. */
+    .panel-controls .crumb {
+        font-size: 0.85rem;
+        max-width: 12ch;
+    }
+
+    .panel-controls .crumb-current {
+        font-size: 0.9rem;
+        max-width: 16ch;
+    }
+
+    /* Keep the close button a round, tappable circle */
+    #b1, #b2, #b3, #b4 {
+        width: 36px;
+        height: 36px;
     }
 
     /* Use dynamic viewport height to account for the mobile browser toolbar */

@@ -38,6 +38,8 @@ function updateMenuUrl() {
 document.addEventListener("DOMContentLoaded", function() {
     panels = document.querySelectorAll('.panel');
     var dateInput = document.getElementById('datePicker');
+    // Prevent picking a future date via the calendar widget.
+    dateInput.max = new Date().toISOString().split('T')[0];
     dateInput.addEventListener('change', commitDate);
     applyStateFromUrl();
     initPanelZoom();
@@ -477,6 +479,9 @@ function updateDate(shift){
     const currentDate = new Date(datePicker.value);
     const nextDay = new Date(currentDate);
     nextDay.setDate(currentDate.getDate() + shift);
+    // Don't let the arrow buttons move past today.
+    const today = new Date(new Date().toISOString().split('T')[0]);
+    if (nextDay > today) return;
     datePicker.valueAsDate = nextDay;
     commitDate();
 };
@@ -485,7 +490,13 @@ function updateDate(shift){
 // refresh thumbnails, and record the date in the URL. Shared by the arrow
 // buttons/keys (updateDate) and the calendar picker's change event.
 function commitDate(){
-    selectedDate = document.getElementById("datePicker").value;
+    const datePicker = document.getElementById("datePicker");
+    // Guard against future dates typed directly into the field.
+    const today = new Date().toISOString().split('T')[0];
+    if (datePicker.value > today) {
+        datePicker.value = today;
+    }
+    selectedDate = datePicker.value;
     updateTiles();
     document.querySelectorAll('img').forEach((image) => {
         image.dispatchEvent(recalcThumbnailsEvent);

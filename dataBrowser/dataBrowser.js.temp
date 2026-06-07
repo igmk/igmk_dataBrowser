@@ -307,10 +307,22 @@ function createTile(key, value, state, panel, fromSearch=false) {
     return tile;
 };
 
+// Split a breadcrumb site field into its individual site ids. Accepts '+' as the
+// multi-site delimiter; also tolerates spaces, since URLSearchParams decodes a
+// literal '+' in the query string to a space.
+function siteIds(siteField) {
+    return (siteField || '').split(/[+\s]+/).filter(Boolean);
+}
+
 async function getInstruments(siteId,panel) {
     try {
-        const response = await fetch('$APIURL/sites/'+siteId+'/instruments');
-        const data = await response.json();
+        // siteId may be a '+'-joined list of sites (e.g. a linked multi-site state);
+        // fetch each site's instruments and merge them into one grid.
+        const ids = siteIds(siteId);
+        const results = await Promise.all(
+            ids.map(id => fetch('$APIURL/sites/'+id+'/instruments').then(r => r.json()))
+        );
+        const data = Object.assign({}, ...results); // merge; dup ids: last wins
         populateGrid(data,"instruments",panel);
     } catch (error) {
         alert('Error: ' + error.message); // display an error message in an alert
@@ -345,14 +357,19 @@ function fetchInstrumentsMeta(siteId) {
 async function siteLabel(siteId) {
     if (!siteId) return '';
     const sites = await fetchSitesMeta();
-    return sites[siteId] || siteId;
+    // For a multi-site field, resolve each id and join the display names.
+    return siteIds(siteId).map(id => sites[id] || id).join(' + ');
 }
 async function instrumentLabel(siteId, instId) {
     if (!instId) return '';
     if (!siteId) return instId;
-    const insts = await fetchInstrumentsMeta(siteId);
-    const entry = insts[instId];
-    return (entry && entry.description) ? entry.description : instId;
+    // The instrument may belong to any of the listed sites; search each in turn.
+    for (const id of siteIds(siteId)) {
+        const insts = await fetchInstrumentsMeta(id);
+        const entry = insts[instId];
+        if (entry) return entry.description || instId;
+    }
+    return instId;
 }
 
 async function populateTile(plotId, panel, changeUrlParams=true){

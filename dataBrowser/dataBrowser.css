@@ -305,6 +305,30 @@ grid-template-rows: repeat(4, 1fr);
     box-sizing: border-box;
 }
 
+/* Breadcrumb line at the top of the selection menu: own full-width row, pills
+   themed for the light menu background. */
+.menu-breadcrumb {
+    grid-column: 1 / -1;     /* own line across the top of the menu */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0.1rem 0.25rem 0.4rem;
+}
+.menu-breadcrumb .crumb {
+    color: #ffffff;
+    background: #009dcc;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    padding: 4px 12px;
+    border-radius: 14px;
+    transition: background 0.15s ease;
+}
+.menu-breadcrumb a.crumb:hover { background: #007ba3; }
+.menu-breadcrumb .crumb-current { background: #005176; color: #fff; cursor: default; }
+.menu-breadcrumb .crumb-sep { color: #888; font-size: 0.95rem; }
+
 /* Individual tile: title on top, then subtitle, then preview image. */
 .tile {
     background: rgba( 0 , 157 , 204,.5);

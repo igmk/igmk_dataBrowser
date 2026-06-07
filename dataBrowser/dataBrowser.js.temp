@@ -229,6 +229,12 @@ function populateGrid(data,state,panel) {
     const grid = document.getElementById('selectionMenu');
     grid.innerHTML = '';
     grid.dataset.state = state;
+    const crumbBar = document.createElement('nav');
+    crumbBar.id = 'menuBreadcrumb';
+    crumbBar.className = 'menu-breadcrumb';
+    crumbBar.setAttribute('aria-label', 'breadcrumb');
+    grid.appendChild(crumbBar);   // reserve first slot synchronously
+    renderMenuBreadcrumb(panel);  // fills crumbBar async; not awaited
     Object.entries(data).forEach(([key, value]) => {
         grid.appendChild(createTile(key, value, state, panel));
     });
@@ -423,6 +429,36 @@ async function renderBreadcrumb(panel) {
     });
     header.innerHTML = html;
     header.scrollLeft = header.scrollWidth; // keep the current crumb in view when it overflows
+};
+
+// Breadcrumb shown at the top of the selection menu while picking a plot. Mirrors
+// renderBreadcrumb but for the in-progress tree (no plot yet): the deepest selected
+// level is the non-clickable current pill; ancestors (incl. the "Sites" root) are
+// links that re-enter the picker at that level via breadcrumbNav.
+async function renderMenuBreadcrumb(panel) {
+    const bar = document.getElementById('menuBreadcrumb');
+    if (!bar) return;
+    const idx = parseInt(panel[1]) - 1;
+    const tree = openPlots[idx];
+    const labels = [await siteLabel(tree[0]), await instrumentLabel(tree[0], tree[1])];
+    const depth = tree[1] ? 1 : (tree[0] ? 0 : -1); // deepest selected level
+    const sep = '<span class="crumb-sep" aria-hidden="true">›</span>';
+    let html = depth === -1
+        ? `<span class="crumb crumb-current" aria-current="page">Sites</span>`
+        : `<a class="crumb" href="?ms=" onclick="breadcrumbNav('${panel}', -1); return false;">Sites</a>`;
+    [0, 1].forEach((i) => {
+        const id = tree[i];
+        if (!id) return;
+        const label = labels[i] || id;
+        if (i < depth) {
+            const ms = tree.slice(0, i + 1).join(',');
+            html += sep + `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
+                  + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${label}">${label}</a>`;
+        } else { // current location
+            html += sep + `<span class="crumb crumb-current" title="${label}" aria-current="page">${label}</span>`;
+        }
+    });
+    bar.innerHTML = html;
 };
 
 // Navigate to breadcrumb `level` for `panel`: -1 = Sites root (site picker),

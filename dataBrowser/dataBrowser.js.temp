@@ -1,4 +1,4 @@
-const MAX_PANELS = 8;          // absolute number of panel slots
+const MAX_PANELS = 9;          // absolute number of panel slots
 const MOBILE_MAX_PANELS = 2;   // narrow-screen cap
 let maxPanels = MAX_PANELS;    // live cap (lowered on narrow screens)
 

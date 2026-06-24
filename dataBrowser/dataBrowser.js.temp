@@ -1,6 +1,17 @@
-var maxPanels = 4;
+const MAX_PANELS = 8;          // absolute number of panel slots
+const MOBILE_MAX_PANELS = 2;   // narrow-screen cap
+let maxPanels = MAX_PANELS;    // live cap (lowered on narrow screens)
+
+// Panels are identified by their numeric index (0-based); these helpers map an
+// index to its DOM element / sub-elements / URL param so the rest of the code
+// never has to parse ids out of strings.
+const panelEl     = (i) => document.getElementById('panel-' + i);
+const panelImg    = (i) => panelEl(i).querySelector('img');
+const panelHeader = (i) => panelEl(i).querySelector('.breadcrumb');
+const panelParam  = (i) => 'p' + (i + 1);   // URL param name (1-based, back-compat)
+
 const recalcThumbnailsEvent = new CustomEvent('recalcThumbnails',{ detail: { yourData: 'Here is some data' } });
-var openPlots = Array(maxPanels).fill().map(() => Array(3).fill(''));
+var openPlots = Array(MAX_PANELS).fill().map(() => Array(3).fill(''));
 var selectedPanel;
 
 let url = new URL(window.location.href);
@@ -13,30 +24,47 @@ if (selectedDate === '0') {
     yesterday.setDate(yesterday.getDate() - 1);
     selectedDate = yesterday.toISOString().split('T')[0];
 }
-let p1_info = params.get('p1');
-let p2_info = params.get('p2');
-let p3_info = params.get('p3');
-let p4_info = params.get('p4');
-// let state = params.get('state');
 let menu_state = params.get('ms') ? params.get('ms').split(',') : ['',''];
 
-
-let currentOpenPanels =
-    [p1_info, p2_info, p3_info, p4_info]
-        .flatMap((info, i) => info != null ? [`p${i + 1}`] : [])
-
+// Indices of the panels currently on screen, in display order.
+let currentOpenPanels = [];
+for (let i = 0; i < MAX_PANELS; i++) {
+    if (params.get(panelParam(i)) != null) currentOpenPanels.push(i);
+}
 if (!currentOpenPanels.length) {
-    currentOpenPanels.push('p1')
+    currentOpenPanels.push(0);
+}
+
+// Push the current params to the address bar as a new history entry.
+function pushUrl() {
+    window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
 }
 
 function updateMenuUrl() {
     params.set('ms', menu_state.join(','));
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.pushState({}, '', newUrl);
+    pushUrl();
+}
+
+// Create the (initially hidden) panel elements once. Keeping them in JS avoids
+// duplicating identical markup per panel and makes MAX_PANELS the single knob.
+function buildPanels() {
+    const wrapper = document.getElementById('plotsWrapper');
+    for (let i = 0; i < MAX_PANELS; i++) {
+        const panel = document.createElement('div');
+        panel.className = 'panel';
+        panel.id = 'panel-' + i;
+        panel.style.display = 'none';
+        panel.innerHTML =
+            `<div class="panel-controls">`
+          + `<nav class="breadcrumb" aria-label="breadcrumb"></nav>`
+          + `<button type="button" class="panel-close" onclick="closePanel(${i})" aria-label="Close panel">&times;</button>`
+          + `</div><img src="./img/placeholder.svg">`;
+        wrapper.appendChild(panel);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    panels = document.querySelectorAll('.panel');
+    buildPanels();
     var dateInput = document.getElementById('datePicker');
     // Prevent picking a future date via the calendar widget.
     dateInput.max = new Date().toISOString().split('T')[0];
@@ -96,43 +124,37 @@ function applyStateFromUrl() {
     document.getElementById('datePicker').value = selectedDate;
 
     // ---- panels / plots ----
-    p1_info = params.get('p1');
-    p2_info = params.get('p2');
-    p3_info = params.get('p3');
-    p4_info = params.get('p4');
+    const panelInfos = Array.from({ length: MAX_PANELS }, (_, i) => params.get(panelParam(i)));
     menu_state = params.get('ms') ? params.get('ms').split(',') : ['', ''];
 
-    currentOpenPanels = [p1_info, p2_info, p3_info, p4_info]
-        .flatMap((info, i) => info != null ? [`p${i + 1}`] : []);
+    currentOpenPanels = panelInfos.flatMap((info, i) => info != null ? [i] : []);
     if (!currentOpenPanels.length) {
-        currentOpenPanels.push('p1');
+        currentOpenPanels.push(0);
     }
 
-    openPlots = Array(maxPanels).fill().map(() => Array(3).fill(''));
+    openPlots = Array(MAX_PANELS).fill().map(() => Array(3).fill(''));
 
     setPanelNumber();
-    updatePanelPositions(currentOpenPanels);
+    updatePanelPositions();
 
     // Reset every panel to a blank slate before re-applying the URL state, so
     // that panels closed in the target state don't keep showing stale plots.
-    ['p1', 'p2', 'p3', 'p4'].forEach((panel) => {
-        const img = document.getElementById(panel).querySelector('img');
-        img.src = './img/placeholder.svg';
-        renderBreadcrumb(panel); // empty tree -> just the "Sites" root
-    });
+    for (let i = 0; i < MAX_PANELS; i++) {
+        panelImg(i).src = './img/placeholder.svg';
+        renderBreadcrumb(i); // empty tree -> just the "Sites" root
+    }
 
-    [p1_info, p2_info, p3_info, p4_info].forEach((info, i) => {
+    panelInfos.forEach((info, i) => {
         if (!info) return;
-        const parts = info.split(',');
-        openPlots[i] = parts;
-        populateTile(parts[2], `p${i + 1}`, false);
+        openPlots[i] = info.split(',');
+        populateTile(openPlots[i][2], i, false);
     });
 
     // ---- view selection ----
-    const hasUrlParams = p1_info || p2_info || p3_info || p4_info || menu_state[0] !== '';
+    const hasUrlParams = panelInfos.some((info) => info != null) || menu_state[0] !== '';
     if (menu_state[0] !== '') {
         openPlots[0] = [...menu_state, ''];
-        changePlot('p1');
+        changePlot(0);
     } else if (!hasUrlParams) {
         showMap();
     } else {
@@ -155,69 +177,56 @@ document.addEventListener('keydown', function(event) {
 
 window.addEventListener("resize", function() {
     setPanelNumber();
-    updatePanelPositions(currentOpenPanels);
+    updatePanelPositions();
 });
 
 function setPanelNumber() {
-    if (window.innerWidth < 600){
-        maxPanels = 2;
-        currentOpenPanels.splice(2);
-    } else {
-        maxPanels = 4;
-    }
-    if (openPlots.length < maxPanels){
-        Array.from({length: maxPanels - openPlots.length}, () => myList.push(Array(3).fill('')));
+    maxPanels = window.innerWidth < 600 ? MOBILE_MAX_PANELS : MAX_PANELS;
+    if (currentOpenPanels.length > maxPanels) {
+        currentOpenPanels.splice(maxPanels);
     }
 };
 
 function newPanel() {
-    if (currentOpenPanels.length < maxPanels) {
-        var allIds = Array.from(panels).map(div => div.id);
-        var availablePanels = allIds.filter(item => !currentOpenPanels.includes(item));
-        var newPanel = availablePanels[0];
-        currentOpenPanels.push(newPanel);
-        updatePanelPositions(currentOpenPanels);
-        renderBreadcrumb(newPanel); // show the "Sites" entry point on the new empty panel
+    if (currentOpenPanels.length >= maxPanels) return;
+    for (let i = 0; i < MAX_PANELS; i++) {
+        if (!currentOpenPanels.includes(i)) {
+            currentOpenPanels.push(i);
+            updatePanelPositions();
+            renderBreadcrumb(i); // show the "Sites" entry point on the new empty panel
+            return;
+        }
     }
 };
 
-function closePanel(button) {
-    var panel = document.getElementById(button).parentNode.parentNode.id;
-    var index = currentOpenPanels.indexOf(panel);
+function closePanel(i) {
+    const index = currentOpenPanels.indexOf(i);
     if (index > -1) {
-        currentOpenPanels.splice(index, 1); 
+        currentOpenPanels.splice(index, 1);
     }
-    updatePanelPositions(currentOpenPanels);
+    // Forget the panel's plot and drop its URL param so it stays closed on reload.
+    openPlots[i] = ['', '', ''];
+    params.delete(panelParam(i));
+    pushUrl();
+    updatePanelPositions();
 };
 
-function openSelectionMenu(button) {
-    var panel = document.getElementById(button).parentNode.parentNode.id;
-    var index = currentOpenPanels.indexOf(panel);
-    document.getElementById("selectionMenu").style.display = "grid";
-    document.getElementById("plotsWrapper").style.display = "none";
-};
-
-function closeSelectionMenu() {
-    document.getElementById("selectionMenu").style.display = "none";
-    document.getElementById("plotsWrapper").style.display = "grid";
-};
-
-async function changePlot(panel) {
-    selectedPanel = parseInt(panel[1]) - 1;
-    var currentPlotTree = openPlots[parseInt(panel[1]) -1]
+async function changePlot(i) {
+    selectedPanel = i;
+    var currentPlotTree = openPlots[i];
     document.getElementById("selectionMenu").style.display = "grid";
     document.getElementById("searchBar").classList.add("open");
     document.getElementById("plotsWrapper").style.display = "none";
     enterMenuMode();
     if (currentPlotTree[1] !=''){
-        getPlots(currentPlotTree[1], panel)
+        getPlots(currentPlotTree[1], i)
     } else if (currentPlotTree[0] !='') {
-        getInstruments(currentPlotTree[0], panel)
+        getInstruments(currentPlotTree[0], i)
     } else {
         try {
             const response = await fetch('$APIURL/sites');
             const data = await response.json();
-            populateGrid(data,"sites",panel);
+            populateGrid(data,"sites",i);
         }
         catch (error) {
             alert('Error: ' + error.message); // display an error message in an alert
@@ -270,8 +279,8 @@ function createTile(key, value, state, panel, fromSearch=false) {
 
     if (state==="sites") {
         tile.addEventListener('click', () => {
-            openPlots[parseInt(panel[1]) -1] = [key, '', ''];
-            menu_state = openPlots[parseInt(panel[1]) -1].slice(0,-1);
+            openPlots[panel] = [key, '', ''];
+            menu_state = openPlots[panel].slice(0,-1);
             updateMenuUrl();
             getInstruments(key,panel);
         });
@@ -279,10 +288,9 @@ function createTile(key, value, state, panel, fromSearch=false) {
         // navigation passes {description, ...}; search passes a plain display string
         valueEl.textContent = (value && value.description) ? value.description : value;
         tile.addEventListener('click', () => {
-            const idx = parseInt(panel[1]) - 1;
             // from search there is no known site context, so clear it
-            openPlots[idx] = [fromSearch ? '' : openPlots[idx][0], key, ''];
-            menu_state = openPlots[idx].slice(0,-1);
+            openPlots[panel] = [fromSearch ? '' : openPlots[panel][0], key, ''];
+            menu_state = openPlots[panel].slice(0,-1);
             updateMenuUrl();
             getPlots(key,panel);
         });
@@ -298,9 +306,8 @@ function createTile(key, value, state, panel, fromSearch=false) {
             };
         });
         tile.addEventListener('click', () => {
-            const idx = parseInt(panel[1]) - 1;
             // from search there is no site/instrument context: breadcrumb is "Sites > plot"
-            openPlots[idx] = fromSearch ? ['', '', value] : [openPlots[idx][0], openPlots[idx][1], value];
+            openPlots[panel] = fromSearch ? ['', '', value] : [openPlots[panel][0], openPlots[panel][1], value];
             params.delete('ms');
             // populateTile sets the pN param and pushes a single history entry
             populateTile(value,panel);
@@ -378,18 +385,15 @@ async function instrumentLabel(siteId, instId) {
     return instId;
 }
 
-async function populateTile(plotId, panel, changeUrlParams=true){
+async function populateTile(plotId, i, changeUrlParams=true){
     const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
     try {
-        const imageContainer = document.getElementById(panel);
-        const image = imageContainer.querySelector('img');
-        image.src = '$APIURL/visualizations/byID/'+plotId+'/'+ymd;
+        panelImg(i).src = '$APIURL/visualizations/byID/'+plotId+'/'+ymd;
         if(changeUrlParams) {
-            params.set(panel, openPlots[parseInt(panel[1]) -1].join(','));
-            const newUrl = `${window.location.pathname}?${params.toString()}`;
-            window.history.pushState({}, '', newUrl);
+            params.set(panelParam(i), openPlots[i].join(','));
+            pushUrl();
         }
-        await renderBreadcrumb(panel);
+        await renderBreadcrumb(i);
     } catch (error) {
         alert('Error: ' + error.message); // display an error message in an alert
     }
@@ -399,11 +403,10 @@ async function populateTile(plotId, panel, changeUrlParams=true){
 // (returns to site selection for this panel) followed by site / instrument links
 // and the current plot as a bold, non-clickable pill. Used for filled panels and,
 // with an empty tree, to show just "Sites" on empty panels.
-async function renderBreadcrumb(panel) {
-    const idx = parseInt(panel[1]) - 1;
-    const header = document.getElementById(`header${idx + 1}`);
+async function renderBreadcrumb(panelIdx) {
+    const header = panelHeader(panelIdx);
     if (!header) return;
-    const tree = openPlots[idx];
+    const tree = openPlots[panelIdx];
     // Resolve ids -> human-readable names for the breadcrumb labels.
     const labels = [
         await siteLabel(tree[0]),
@@ -411,7 +414,7 @@ async function renderBreadcrumb(panel) {
         tree[2]
     ];
     const sep = '<span class="crumb-sep" aria-hidden="true">›</span>';
-    let html = `<a class="crumb" href="?ms=" onclick="breadcrumbNav('${panel}', -1); return false;">Sites</a>`;
+    let html = `<a class="crumb" href="?ms=" onclick="breadcrumbNav(${panelIdx}, -1); return false;">Sites</a>`;
     tree.forEach((id, i) => {
         if (!id) return; // skip empty levels (e.g. search-opened plots)
         const label = labels[i] || id;
@@ -421,7 +424,7 @@ async function renderBreadcrumb(panel) {
             // the selection repopulates this same panel's tile.
             const ms = tree.slice(0, i + 1).join(',');
             html += sep + `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
-                  + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${label}">${label}</a>`;
+                  + `onclick="breadcrumbNav(${panelIdx}, ${i}); return false;" title="${label}">${label}</a>`;
         } else {
             // plot name: the current selection, not clickable
             html += sep + `<span class="crumb crumb-current" title="${label}" aria-current="page">${label}</span>`;
@@ -435,17 +438,16 @@ async function renderBreadcrumb(panel) {
 // renderBreadcrumb but for the in-progress tree (no plot yet): the deepest selected
 // level is the non-clickable current pill; ancestors (incl. the "Sites" root) are
 // links that re-enter the picker at that level via breadcrumbNav.
-async function renderMenuBreadcrumb(panel) {
+async function renderMenuBreadcrumb(panelIdx) {
     const bar = document.getElementById('menuBreadcrumb');
     if (!bar) return;
-    const idx = parseInt(panel[1]) - 1;
-    const tree = openPlots[idx];
+    const tree = openPlots[panelIdx];
     const labels = [await siteLabel(tree[0]), await instrumentLabel(tree[0], tree[1])];
     const depth = tree[1] ? 1 : (tree[0] ? 0 : -1); // deepest selected level
     const sep = '<span class="crumb-sep" aria-hidden="true">›</span>';
     let html = depth === -1
         ? `<span class="crumb crumb-current" aria-current="page">Sites</span>`
-        : `<a class="crumb" href="?ms=" onclick="breadcrumbNav('${panel}', -1); return false;">Sites</a>`;
+        : `<a class="crumb" href="?ms=" onclick="breadcrumbNav(${panelIdx}, -1); return false;">Sites</a>`;
     [0, 1].forEach((i) => {
         const id = tree[i];
         if (!id) return;
@@ -453,7 +455,7 @@ async function renderMenuBreadcrumb(panel) {
         if (i < depth) {
             const ms = tree.slice(0, i + 1).join(',');
             html += sep + `<a class="crumb" href="?ms=${encodeURIComponent(ms)}" `
-                  + `onclick="breadcrumbNav('${panel}', ${i}); return false;" title="${label}">${label}</a>`;
+                  + `onclick="breadcrumbNav(${panelIdx}, ${i}); return false;" title="${label}">${label}</a>`;
         } else { // current location
             html += sep + `<span class="crumb crumb-current" title="${label}" aria-current="page">${label}</span>`;
         }
@@ -465,65 +467,41 @@ async function renderMenuBreadcrumb(panel) {
 // 0 = site (instruments at that site), 1 = instrument (that instrument's plots).
 // Keep the tree up to and including the level, clear deeper, then run the normal
 // changePlot flow bound to this panel so completing the selection repopulates it.
-function breadcrumbNav(panel, level) {
-    const idx = parseInt(panel[1]) - 1;
-    const tree = openPlots[idx];
-    openPlots[idx] = [level >= 0 ? (tree[0] || '') : '', level >= 1 ? (tree[1] || '') : '', ''];
-    menu_state = openPlots[idx].slice(0, -1);
-    selectedPanel = idx;
+function breadcrumbNav(i, level) {
+    const tree = openPlots[i];
+    openPlots[i] = [level >= 0 ? (tree[0] || '') : '', level >= 1 ? (tree[1] || '') : '', ''];
+    menu_state = openPlots[i].slice(0, -1);
+    selectedPanel = i;
     updateMenuUrl();
-    changePlot(panel);
+    changePlot(i);
 };
 
-function updatePanelPositions(openPanels) {
-    // Hide all panels first
-    panels.forEach(panel => {
-        panel.style.display = "none";
-    });
+// Lay out the open panels as a balanced grid: cols = ceil(sqrt(n)), filled row by
+// row with a trailing partial row centered. Each cell spans 2 column tracks so an
+// odd trailing row can be offset by one track to centre it. Narrow screens collapse
+// to a single stacked column. Reproduces the original 1-4 layouts exactly.
+function updatePanelPositions() {
+    const wrapper = document.getElementById('plotsWrapper');
+    for (let i = 0; i < MAX_PANELS; i++) panelEl(i).style.display = "none";
 
-    const layouts = {
-        4: [
-            ["1 / 3", "1 / 3"],
-            ["3 / 5", "1 / 3"],
-            ["1 / 3", "3 / 5"],
-            ["3 / 5", "3 / 5"]
-        ],
+    const open = currentOpenPanels;
+    const n = open.length;
+    if (!n) return;
 
-        3: [
-            ["1 / 3", "1 / 3"],
-            ["3 / 5", "1 / 3"],
-            ["2 / 4", "3 / 5"]
-        ],
+    const cols = window.innerWidth < 600 ? 1 : Math.ceil(Math.sqrt(n));
+    const rows = Math.ceil(n / cols);
+    wrapper.style.gridTemplateColumns = `repeat(${cols * 2}, 1fr)`;
+    wrapper.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-        2: maxPanels === 4
-            ? [
-                ["1 / 3", "1 / 5"],
-                ["3 / 5", "1 / 5"]
-            ]
-            : [
-                ["1 / 5", "1 / 3"],
-                ["1 / 5", "3 / 5"]
-            ],
-
-        1: [
-            ["1 / 5", "1 / 5"]
-        ]
-    };
-
-    const layout = layouts[openPanels.length];
-
-    if (!layout) return;
-
-    openPanels.forEach((panelId, index) => {
-        const panel = document.getElementById(panelId);
-
-        if (!panel) return;
-
-        const [gridColumn, gridRow] = layout[index];
-
-        panel.style.display = "flex";
-        panel.style.gridColumn = gridColumn;
-        panel.style.gridRow = gridRow;
+    open.forEach((idx, k) => {
+        const r = Math.floor(k / cols);
+        const itemsInRow = Math.min(cols, n - r * cols);
+        const colInRow = k - r * cols;
+        const colStart = 1 + (cols - itemsInRow) + colInRow * 2; // centre a partial row
+        const el = panelEl(idx);
+        el.style.display = "flex";
+        el.style.gridColumn = `${colStart} / ${colStart + 2}`;
+        el.style.gridRow = `${r + 1}`;
     });
 }
 
@@ -555,19 +533,16 @@ function commitDate(){
         image.dispatchEvent(recalcThumbnailsEvent);
     });
     params.set('date', selectedDate);
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.pushState({}, '', newUrl);
+    pushUrl();
 };
 
 function updateTiles(){
-    var panels=['p1','p2','p3','p4']
-    for (const panel of panels){
-        const imageContainer = document.getElementById(panel);
-        const image = imageContainer.querySelector('img');
-        const plotUrl = image.src;
-        const plotId = plotUrl.split('/')[5];
-        populateTile(plotId,panel,false);
-    };
+    // Re-render each open panel's plot for the current date, using the stored plot
+    // id rather than parsing it back out of the image URL.
+    for (const i of currentOpenPanels){
+        const plotId = openPlots[i][2];
+        if (plotId) populateTile(plotId, i, false);
+    }
 };
 
 var mapActive = true;
@@ -611,7 +586,7 @@ function treeNavBack() {
     }
     menu_state = openPlots[selectedPanel].slice(0,-1);
     updateMenuUrl();
-    changePlot(`p${selectedPanel+1}`);
+    changePlot(selectedPanel);
 };
 
 // Enable the Back button only when there is a level above the one currently shown:
@@ -677,11 +652,11 @@ async function searchItems() {
 
     // Open results into the panel being edited, else the first open panel.
     let panel;
-    if (selectedPanel != null && currentOpenPanels.includes(`p${selectedPanel + 1}`)) {
-        panel = `p${selectedPanel + 1}`;
+    if (selectedPanel != null && currentOpenPanels.includes(selectedPanel)) {
+        panel = selectedPanel;
     } else {
-        panel = currentOpenPanels[0] || 'p1';
-        selectedPanel = parseInt(panel[1]) - 1; // keep Back/Close controls in sync
+        panel = currentOpenPanels.length ? currentOpenPanels[0] : 0;
+        selectedPanel = panel; // keep Back/Close controls in sync
     }
 
     // Guard against out-of-order responses from rapid typing.

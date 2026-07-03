@@ -165,8 +165,9 @@ function applyStateFromUrl() {
 
     panelInfos.forEach((info, i) => {
         if (!info) return;
-        openPlots[i] = info.split(',');
-        populateTile(openPlots[i][2], i, false);
+        const fields = info.split(',');
+        openPlots[i] = fields.slice(0, 3);       // site, instrument, plotId
+        restorePanelPlot(i, fields[3] || null);  // fields[3]: linked granularity, if any
     });
 
     // ---- view selection ----
@@ -275,26 +276,56 @@ function populateGrid(data,state,panel) {
     updateBackButton(state);
 };
 
-// data: [{id, granularities}] from /visualizations/byInstrument/{id}. Plots with
-// one granularity render as a flat, header-less grid (unchanged from before).
-// Plots with more than one are pulled out into one section per granularity
-// (styled like the search-results category headers): each section lists that
-// granularity's tile for every plot supporting it, so picking a tile also picks
-// the granularity to open.
+// data: [{id, granularities}] from /visualizations/byInstrument/{id}. If every plot
+// has a single granularity, they render as a flat, header-less grid (unchanged from
+// before). As soon as at least one plot has more than one granularity, plots are
+// grouped into one section per granularity (styled like the search-results category
+// headers, and click-to-collapse): each section lists that granularity's tile for
+// every plot supporting it, so picking a tile also picks the granularity to open.
+// Single-granularity plots are folded into the "daily" section alongside the
+// multi-granularity ones rather than sitting in a separate flat area next to it.
+// Only the "daily" section starts expanded; the rest start collapsed and don't load
+// their thumbnails (no request is made) until the user expands them.
 function renderPlotTiles(data, panel, grid) {
     const single = data.filter(p => !p.granularities || p.granularities.length <= 1);
     const multi = data.filter(p => p.granularities && p.granularities.length > 1);
 
-    single.forEach((plot, i) => grid.appendChild(createTile(String(i), plot, 'plots', panel)));
+    if (!multi.length) {
+        single.forEach((plot, i) => grid.appendChild(createTile(String(i), plot, 'plots', panel)));
+        return;
+    }
 
     GRANULARITY_ORDER.forEach(gran => {
-        const plots = multi.filter(p => p.granularities.includes(gran));
+        const plots = gran === 'daily'
+            ? single.concat(multi.filter(p => p.granularities.includes(gran)))
+            : multi.filter(p => p.granularities.includes(gran));
         if (!plots.length) return;
+        const expanded = gran === 'daily';
+
         const header = document.createElement('h3');
-        header.className = 'search-section';
+        header.className = 'search-section section-toggle' + (expanded ? ' expanded' : '');
         header.textContent = gran;
+
+        const body = document.createElement('div');
+        body.className = 'section-body';
+        body.style.display = expanded ? 'contents' : 'none';
+
+        const tiles = plots.map((plot, i) => createTile(String(i), plot, 'plots', panel, false, gran, !expanded));
+        tiles.forEach(t => body.appendChild(t));
+
+        let loaded = expanded;
+        header.addEventListener('click', () => {
+            const nowExpanded = body.style.display === 'none';
+            body.style.display = nowExpanded ? 'contents' : 'none';
+            header.classList.toggle('expanded', nowExpanded);
+            if (nowExpanded && !loaded) {
+                loaded = true;
+                tiles.forEach(t => t.loadThumbnail && t.loadThumbnail());
+            }
+        });
+
         grid.appendChild(header);
-        plots.forEach((plot, i) => grid.appendChild(createTile(String(i), plot, 'plots', panel, false, gran)));
+        grid.appendChild(body);
     });
 }
 
@@ -307,8 +338,10 @@ function renderPlotTiles(data, panel, grid) {
 // `fromSearch` marks a search result, which carries no parent context: selecting it
 // clears the unknown levels instead of inheriting whatever was previously in the tree.
 // `granularity` (plots state only) is the granularity this tile represents, when it
-// was rendered inside one of renderPlotTiles' per-granularity sections.
-function createTile(key, value, state, panel, fromSearch=false, granularity=null) {
+// was rendered inside one of renderPlotTiles' per-granularity sections. `lazy` defers
+// the thumbnail request until `tile.loadThumbnail()` is called (used for sections that
+// start collapsed, so they don't fetch anything until expanded).
+function createTile(key, value, state, panel, fromSearch=false, granularity=null, lazy=false) {
     const tile = document.createElement('div');
     tile.className = 'tile';
 
@@ -361,8 +394,19 @@ function createTile(key, value, state, panel, fromSearch=false, granularity=null
                 tile.style.display = "none";
             };
         };
-        setThumb();
-        img.addEventListener('recalcThumbnails', setThumb);
+        if (lazy) {
+            // Collapsed section: don't fetch anything until the section is expanded
+            // (renderPlotTiles calls this), and only start tracking date changes once
+            // it has actually been loaded.
+            tile.loadThumbnail = () => {
+                setThumb();
+                img.addEventListener('recalcThumbnails', setThumb);
+                tile.loadThumbnail = null;
+            };
+        } else {
+            setThumb();
+            img.addEventListener('recalcThumbnails', setThumb);
+        }
 
         tile.addEventListener('click', () => {
             // from search there is no site/instrument context: breadcrumb is "Sites > plot"
@@ -444,6 +488,40 @@ async function instrumentLabel(siteId, instId) {
     return instId;
 }
 
+// Cached (and request-deduped) per-instrument plot list, used to recover a plot's
+// available granularities when a panel is restored from the URL (the URL only
+// stores the plot id, not its granularities).
+const instPlotsPromises = {};
+function fetchInstrumentPlots(instrumentId) {
+    if (!instPlotsPromises[instrumentId]) {
+        instPlotsPromises[instrumentId] = fetch('$APIURL/visualizations/byInstrument/' + instrumentId).then(r => r.json()).catch(() => []);
+    }
+    return instPlotsPromises[instrumentId];
+}
+
+// Reopen a panel's plot from a parsed URL tree (openPlots[i] already set). Looks up
+// the plot's granularities via its instrument, if known, so the switcher still shows
+// on a direct link / page reload; `urlGranularity` (the link's 4th field, if present)
+// picks which one to open at.
+async function restorePanelPlot(i, urlGranularity) {
+    const [, instrumentId, plotId] = openPlots[i];
+    let granularities = null;
+    if (instrumentId) {
+        const plots = await fetchInstrumentPlots(instrumentId);
+        const match = Array.isArray(plots) ? plots.find(p => p.id === plotId) : null;
+        if (match && match.granularities && match.granularities.length) granularities = match.granularities;
+    }
+    populateTile(plotId, i, false, urlGranularity, granularities);
+}
+
+// The pN URL value for a panel: site,instrument,plotId, plus a 4th "current granularity"
+// field so a specific granularity is linkable -- but only when the plot actually has more
+// than one, so single-granularity (the vast majority) links stay exactly as before.
+function panelUrlValue(i) {
+    const meta = panelPlotMeta[i];
+    return (meta && meta.granularities.length > 1) ? [...openPlots[i], meta.current] : openPlots[i];
+}
+
 // `granularity` is the granularity to open at (defaults to the first of `granularities`,
 // or 'daily' if neither is known); `granularities` is the full list available for this
 // plot, used to populate the panel's switcher (omitted -> no switcher, single 'daily').
@@ -456,7 +534,7 @@ async function populateTile(plotId, i, changeUrlParams=true, granularity=null, g
         panelPlotMeta[i] = { plotId, granularities: list, current: gran };
         renderGranularitySwitcher(i);
         if(changeUrlParams) {
-            params.set(panelParam(i), openPlots[i].join(','));
+            params.set(panelParam(i), panelUrlValue(i).join(','));
             pushUrl();
         }
         await renderBreadcrumb(i);
@@ -484,7 +562,8 @@ function renderGranularitySwitcher(i) {
 
 // Switch an already-open panel's plot to a different granularity. The image for every
 // granularity the plot supports comes from the same byID endpoint (just a different URL),
-// so this is purely client-side: no refetch of plot metadata needed.
+// so this is purely client-side: no refetch of plot metadata needed. Also updates the
+// pN URL param so the newly-selected granularity is linkable.
 function selectGranularity(i, gran) {
     const meta = panelPlotMeta[i];
     if (!meta || gran === meta.current) return;
@@ -492,6 +571,8 @@ function selectGranularity(i, gran) {
     const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
     panelImg(i).src = plotImageUrl(meta.plotId, gran, ymd);
     renderGranularitySwitcher(i);
+    params.set(panelParam(i), panelUrlValue(i).join(','));
+    pushUrl();
 }
 
 // Build the breadcrumb for `panel` from openPlots: an always-present "Sites" root

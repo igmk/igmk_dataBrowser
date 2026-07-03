@@ -403,6 +403,23 @@ max-height: 94vh;
     text-transform: uppercase;
 }
 
+/* Plot-granularity section headers: same look as .search-section, but clickable
+   to collapse/expand the tiles below them (see renderPlotTiles). */
+.search-section.section-toggle {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.search-section.section-toggle::after {
+    content: '▸';
+    transition: transform .15s ease;
+}
+.search-section.section-toggle.expanded::after {
+    transform: rotate(90deg);
+}
+
 /* No big gap above the very first section */
 .search-section:first-child {
     margin-top: 0;

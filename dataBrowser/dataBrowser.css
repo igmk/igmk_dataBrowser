@@ -211,6 +211,29 @@ max-height: 94vh;
     font-size: 0.95rem;
 }
 
+/* Panel granularity switcher: shown only for plots with more than one granularity. */
+.granularity-switcher {
+    display: none;
+    gap: .35rem;
+    padding: .3rem .5rem;
+    flex-wrap: wrap;
+}
+.granularity-btn {
+    background: rgba(0,157,204,.5);
+    border: none;
+    border-radius: 12px;
+    padding: .15rem .7rem;
+    font-size: .8rem;
+    text-transform: capitalize;
+    cursor: pointer;
+    color: #1a1a1a;
+}
+.granularity-btn.active {
+    background: #005176;
+    color: #fff;
+    cursor: default;
+}
+
 .date-controls {
     display: flex;
     align-items: center;

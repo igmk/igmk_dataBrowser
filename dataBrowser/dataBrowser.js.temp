@@ -229,6 +229,11 @@ document.addEventListener('keydown', function(event) {
         updateDate(-1);
     } else if (event.key === 's'|| event.key === 'ArrowRight'){
         updateDate(1);
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        // Page through open multi-item (radiosonde-style) panels' items, same way
+        // ArrowLeft/Right page every open panel's date. Only prevent the page's
+        // default scroll if something was actually there to step through.
+        if (stepItem(event.key === 'ArrowDown' ? 1 : -1)) event.preventDefault();
     }
   }
 });
@@ -383,6 +388,31 @@ function openPlotInPanel(panel, fromSearch, plotId, gran, granularities, multi, 
     exitMenuMode();
 }
 
+// Build one tile for a single item of a multi-item (radiosonde-style) plot -- same
+// look as a normal plot tile, labeled with its 1-based item number since every item
+// shares the same plotId. Used by createTile's multi+daily branch, which renders
+// one of these per item instead of a single tile with several thumbnails nested
+// inside.
+function buildItemTile(plotId, ymd, idx, panel, fromSearch, gran, granularities, multi) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+
+    const valueEl = document.createElement('div');
+    valueEl.className = 'tile-value';
+    valueEl.textContent = plotId + ' #' + (idx + 1);
+
+    const img = document.createElement('img');
+    img.className = 'tile-img';
+    img.src = plotItemUrl(plotId, ymd, idx);
+
+    tile.appendChild(valueEl);
+    tile.appendChild(img);
+
+    tile.addEventListener('click', () => openPlotInPanel(panel, fromSearch, plotId, gran, granularities, multi, idx));
+
+    return tile;
+}
+
 // Build a single selection-menu tile. Shared by populateGrid (sites/instruments/plots
 // navigation) and searchItems (search results). `state` drives the click behaviour:
 //   sites       -> value is the display name; opens that site's instruments
@@ -439,75 +469,66 @@ function createTile(key, value, state, panel, fromSearch=false, granularity=null
             ? value.granularities : ['daily'];
         const multi = !!(value && typeof value === 'object' && value.multi);
         const gran = granularity || granularities[0];
-        valueEl.textContent = plotId;
 
         if (multi && gran === 'daily') {
             // Radiosonde-style plot: can have more than one image (e.g. launch) on this
-            // day. Show every item as its own mini thumbnail instead of a single image;
-            // clicking one opens that specific item in the panel.
-            img.style.display = 'none'; // unused placeholder; the items row below is the real content
-            const itemsRow = document.createElement('div');
-            itemsRow.className = 'tile-items-row';
-            tile.appendChild(itemsRow);
+            // day. Render each item as its own separate tile rather than nesting several
+            // thumbnails inside one -- grouped under a display:contents wrapper (same
+            // trick renderPlotTiles' collapsible sections use) so each item lays out as
+            // its own grid cell alongside the regular tiles.
+            const group = document.createElement('div');
+            group.className = 'tile-items-group';
+            group.style.display = 'contents';
 
             const loadItems = async () => {
                 const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-                itemsRow.innerHTML = '';
+                group.innerHTML = '';
                 try {
                     const count = await fetchItemCount(plotId, ymd);
-                    if (!count) { tile.style.display = "none"; return; }
-                    tile.style.display = "block";
                     for (let idx = 0; idx < count; idx++) {
-                        const itemImg = document.createElement('img');
-                        itemImg.className = 'tile-img tile-items-thumb';
-                        itemImg.src = plotItemUrl(plotId, ymd, idx);
-                        itemImg.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            openPlotInPanel(panel, fromSearch, plotId, gran, granularities, multi, idx);
-                        });
-                        itemsRow.appendChild(itemImg);
+                        group.appendChild(buildItemTile(plotId, ymd, idx, panel, fromSearch, gran, granularities, multi));
                     }
                 } catch (error) {
-                    tile.style.display = "none";
+                    // leave the group empty -- nothing to show for this day
                 }
             };
             if (lazy) {
-                tile.loadThumbnail = () => {
+                group.loadThumbnail = () => {
                     loadItems();
-                    itemsRow.addEventListener('recalcThumbnails', loadItems);
-                    tile.loadThumbnail = null;
+                    group.addEventListener('recalcThumbnails', loadItems);
+                    group.loadThumbnail = null;
                 };
             } else {
                 loadItems();
-                itemsRow.addEventListener('recalcThumbnails', loadItems);
+                group.addEventListener('recalcThumbnails', loadItems);
             }
+            return group;
+        }
 
-            tile.addEventListener('click', () => openPlotInPanel(panel, fromSearch, plotId, gran, granularities, multi, 0));
-        } else {
-            const setThumb = () => {
-                const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
-                img.src = plotImageUrl(plotId, gran, ymd);
-                tile.style.display = "block";
-                img.onerror = function() {
-                    tile.style.display = "none";
-                };
+        valueEl.textContent = plotId;
+        const setThumb = () => {
+            const ymd = document.getElementById("datePicker").valueAsDate.toISOString().slice(0, 10).replace(/-/g, '');
+            img.src = plotImageUrl(plotId, gran, ymd);
+            tile.style.display = "block";
+            img.onerror = function() {
+                tile.style.display = "none";
             };
-            if (lazy) {
-                // Collapsed section: don't fetch anything until the section is expanded
-                // (renderPlotTiles calls this), and only start tracking date changes once
-                // it has actually been loaded.
-                tile.loadThumbnail = () => {
-                    setThumb();
-                    img.addEventListener('recalcThumbnails', setThumb);
-                    tile.loadThumbnail = null;
-                };
-            } else {
+        };
+        if (lazy) {
+            // Collapsed section: don't fetch anything until the section is expanded
+            // (renderPlotTiles calls this), and only start tracking date changes once
+            // it has actually been loaded.
+            tile.loadThumbnail = () => {
                 setThumb();
                 img.addEventListener('recalcThumbnails', setThumb);
-            }
-
-            tile.addEventListener('click', () => openPlotInPanel(panel, fromSearch, plotId, gran, granularities, multi, 0));
+                tile.loadThumbnail = null;
+            };
+        } else {
+            setThumb();
+            img.addEventListener('recalcThumbnails', setThumb);
         }
+
+        tile.addEventListener('click', () => openPlotInPanel(panel, fromSearch, plotId, gran, granularities, multi, 0));
     } else {alert("unknown state")}
 
     return tile;
@@ -720,6 +741,22 @@ function selectItem(i, idx) {
     renderItemSwitcher(i);
 }
 
+// Up/Down arrow navigation: step every open multi-item panel's shown item by `delta`
+// (+1/-1), clamped to its available range. Returns whether any panel actually moved,
+// so the caller can decide whether to suppress the arrow key's default page scroll.
+function stepItem(delta) {
+    let stepped = false;
+    for (const i of currentOpenPanels) {
+        const meta = panelPlotMeta[i];
+        if (!meta || !meta.multi || meta.current !== 'daily' || meta.itemCount <= 1) continue;
+        const idx = Math.min(Math.max(meta.itemIndex + delta, 0), meta.itemCount - 1);
+        if (idx === meta.itemIndex) continue;
+        selectItem(i, idx);
+        stepped = true;
+    }
+    return stepped;
+}
+
 // Build the breadcrumb for `panel` from openPlots: an always-present "Sites" root
 // (returns to site selection for this panel) followed by site / instrument links
 // and the current plot as a bold, non-clickable pill. Used for filled panels and,
@@ -850,9 +887,9 @@ function commitDate(){
     }
     selectedDate = datePicker.value;
     updateTiles();
-    // Multi-item tiles (see createTile) listen on their .tile-items-row container
-    // rather than an <img>, since they render a variable number of thumbnails.
-    document.querySelectorAll('img, .tile-items-row').forEach((el) => {
+    // Multi-item tiles (see createTile) listen on their .tile-items-group wrapper
+    // rather than an <img>, since they render a variable number of separate tiles.
+    document.querySelectorAll('img, .tile-items-group').forEach((el) => {
         el.dispatchEvent(recalcThumbnailsEvent);
     });
     params.set('date', selectedDate);

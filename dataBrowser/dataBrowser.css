@@ -438,6 +438,23 @@ max-height: 94vh;
     margin-top: .5rem;
 }
 
+/* Multi-item plot tiles (e.g. radiosonde launches): a row of per-item thumbnails
+   instead of a single .tile-img, so every item for the day is visible at a glance. */
+.tile-items-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    margin-top: .5rem;
+}
+.tile-items-thumb {
+    width: calc(50% - .15rem);
+    margin-top: 0;
+    cursor: pointer;
+}
+.tile-items-thumb:hover {
+    outline: 2px solid #005176;
+}
+
 #mapFrame {
     display: none;
     width: 100%;
